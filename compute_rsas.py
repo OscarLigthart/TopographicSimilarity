@@ -11,6 +11,7 @@ from scipy import spatial
 from metrics import rsa
 from data import one_hot
 from tqdm import tqdm
+import numpy as np
 
 
 VOCAB = 28  # Vocab size + 3 special case tokens (eos, sos, pad)
@@ -41,7 +42,6 @@ def parse_arguments(args):
     return args
 
 
-
 def flatten_cos(a, b) -> float:
     return spatial.distance.cosine(a.flatten(), b.flatten())
 
@@ -53,11 +53,11 @@ def on_hot_hamming(a, b):
 
 
 DIST = {
-    "h_sender": spatial.distance.cosine,
-    "h_rnn_sender": flatten_cos,
-    "h_receiver": spatial.distance.cosine,
-    "h_rnn_receiver": flatten_cos,
-    "targets": spatial.distance.hamming,
+    #"h_sender": spatial.distance.cosine,
+    #"h_rnn_sender": flatten_cos,
+    #"h_receiver": spatial.distance.cosine,
+    #"h_rnn_receiver": flatten_cos,
+    #"targets": spatial.distance.hamming,
     "messages": on_hot_hamming,
 }
 
@@ -79,14 +79,14 @@ def main(args):
 
     metric_files = glob.glob(f"{path}/*/*.pkl")
 
-    for file in tqdm(metric_files):
-        m = pickle.load(open(file, "rb"))
-        for (space_x, space_y) in combinations(list(DIST.keys()), 2):
-            rsa_title = f"RSA:{space_x}/{space_y}"
-            if rsa_title not in m:
-                r = rsa(m[space_x], m[space_y], DIST[space_x], DIST[space_y])
-                m[rsa_title] = r
-        pickle.dump(m, open(file, "wb"))
+    # for file in tqdm(metric_files):
+    #     m = pickle.load(open(file, "rb"))
+    #     for (space_x, space_y) in combinations(list(DIST.keys()), 2):
+    #         rsa_title = f"RSA:{space_x}/{space_y}"
+    #         if rsa_title not in m:
+    #             r = rsa(m[space_x], m[space_y], DIST[space_x], DIST[space_y])
+    #             m[rsa_title] = r
+    #     pickle.dump(m, open(file, "wb"))
 
     # Calculate Cross-Seed RSA for all
     seed_folders = glob.glob(f"{path}/*")
@@ -110,6 +110,12 @@ def main(args):
 
                     m1 = pickle.load(open(f1, "rb"))
                     m2 = pickle.load(open(f2, "rb"))
+
+                    print(one_hot(m1[space][3], n_cols=VOCAB).flatten())
+
+                    print(m1[space][3])
+                    print(m2[space][3])
+                    print(DIST[space])
 
                     r = rsa(m1[space], m2[space], DIST[space], DIST[space])
                     RESULTS[space][seed1 + seed2][iteration] = r

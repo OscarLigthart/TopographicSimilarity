@@ -42,6 +42,11 @@ def rsa(
     for i, c in enumerate(combinations):
         s1, s2 = c[0], c[1]
 
+        print(distance_function_x(space_x[s1], space_x[s2]))
+        print(distance_function_y(space_y[s1], space_y[s2]))
+        print(distance_function_x)
+        print(distance_function_y)
+        quit()
         sim_x[i] = distance_function_x(space_x[s1], space_x[s2])
         sim_y[i] = distance_function_y(space_y[s1], space_y[s2])
 
