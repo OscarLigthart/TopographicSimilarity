@@ -6,5 +6,5 @@ for seed in {1..10}
     python main.py --seed $seed --attributes 4 --resume
   done
 
-echo "Computing RSAs"
-python compute_rsas.py --attributes 4
+#echo "Computing RSAs"
+#python compute_rsas.py --attributes 4

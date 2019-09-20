@@ -218,7 +218,7 @@ class Sender(nn.Module):
         else:
             mask = token == self.eos_id
         mask *= seq_lengths == initial_length
-        seq_lengths[mask.nonzero()] = seq_pos + 1  # start always token appended
+        seq_lengths[mask.nonzero()] = seq_pos + 1  # start token always appended
 
     def forward(self, hidden_state, tau=1.2):
         """
@@ -259,6 +259,7 @@ class Sender(nn.Module):
 
         # todo why output[-1] --> because you always take the last character for the RNN (this
         # todo starts with a sos token (for the entire batch) and gradually adds tokens
+        # todo output shape is of [batch_size x seq_len x vocab_size]
         for i in range(self.output_len):
             if self.training:
                 emb = torch.matmul(output[-1], self.embedding)
@@ -291,7 +292,8 @@ class Sender(nn.Module):
             output.append(token)
 
             self._calculate_seq_len(seq_lengths, token, initial_length, seq_pos=i + 1)
-
+        print(torch.stack(output, dim=1).shape)
+        quit()
         return (
             torch.stack(output, dim=1),
             seq_lengths,

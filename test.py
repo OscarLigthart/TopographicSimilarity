@@ -4,21 +4,45 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pickle
 
-RSA_2_ATTR = pickle.load(open(f'runs/lstm_h_64_lr_0.001_max_len_10_vocab_25_attr_2/rsa_analysis.pkl', 'rb'))
-RSA_SAME_DATA = pickle.load(open(f'runs/lstm_h_64_lr_0.001_max_len_10_vocab_25_same_data_attr_5/rsa_analysis.pkl', 'rb'))
+def levenshtein_ratio_and_distance(s, t):
+    """ levenshtein_ratio_and_distance:
+        Calculates levenshtein distance between two strings.
+        If ratio_calc = True, the function computes the
+        levenshtein distance ratio of similarity between two strings
+        For all i and j, distance[i,j] will contain the Levenshtein
+        distance between the first i characters of s and the
+        first j characters of t
+    """
+    # Initialize matrix of zeros
+    rows = len(s)+1
+    cols = len(t)+1
+    distance = np.zeros((rows,cols),dtype = int)
 
-for key,value in RSA_SAME_DATA.items():
+    # Populate matrix of zeros with the indeces of each character of both strings
+    for i in range(1, rows):
+        for k in range(1,cols):
+            distance[i][0] = i
+            distance[0][k] = k
 
-    for key2,value2 in value.items():
-        print(key2)
-        print(value2)
+    # Iterate over the matrix to compute the cost of deletions,insertions and/or substitutions
+    for col in range(1, cols):
+        for row in range(1, rows):
+            if s[row-1] == t[col-1]:
+                cost = 0 # If the characters are the same in the two strings in a given position [i,j] then the cost is 0
+            else:
+                # If we choose to calculate the ratio the cost of a substitution is 2.
+                cost = 2
 
+            distance[row][col] = min(distance[row-1][col] + 1,      # Cost of deletions
+                                 distance[row][col-1] + 1,          # Cost of insertions
+                                 distance[row-1][col-1] + cost)     # Cost of substitutions
 
-# for key,value in RSA_2_ATTR.items():
-#     print(key)
-#     for key2,value2 in value.items():
-#         print(key2)
-#         print(value2)
-#         break
+    # Computation of the Levenshtein Distance Ratio
+    Ratio = ((len(s)+len(t)) - distance[row][col]) / (len(s)+len(t))
+    return Ratio
 
-print(RSA_2_ATTR)
+score = levenshtein_ratio_and_distance('holla', 'hallo')
+print(score)
+
+score = levenshtein_ratio_and_distance([23, 18, 9, 9, 37], [23, 37, 9, 9, 18])
+print(score)

@@ -80,8 +80,8 @@ def get_attributes(nr_attributes):
 
     # make sure the dataset holds at least 50 samples, by adding dimensions to attributes
     # todo, discuss a better way of doing this
-    # todo, while loop is set to 50, make it 10 to test Gautier's idea
-    while total_attr < 150:
+
+    while total_attr < 150 and all(i >= 2 for i in gen_attr):
         index = np.argmin(gen_attr)
         gen_attr[index] += 1
         total_attr = np.prod(gen_attr)

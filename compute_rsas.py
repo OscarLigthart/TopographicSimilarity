@@ -37,6 +37,12 @@ def parse_arguments(args):
         default=5,
         help="determine whether data is created on same seed or not"
     )
+    parser.add_argument(
+        "--samples",
+        type=int,
+        default=None,
+        help="determine whether data is created on same seed or not"
+    )
 
     args = parser.parse_args(args)
     return args
@@ -51,14 +57,52 @@ def on_hot_hamming(a, b):
         one_hot(a, n_cols=VOCAB).flatten(), one_hot(b, n_cols=VOCAB).flatten()
     )
 
+def levenshtein_ratio_and_distance(s, t):
+    """ levenshtein_ratio_and_distance:
+        Calculates levenshtein distance between two strings.
+        If ratio_calc = True, the function computes the
+        levenshtein distance ratio of similarity between two strings
+        For all i and j, distance[i,j] will contain the Levenshtein
+        distance between the first i characters of s and the
+        first j characters of t
+    """
+    # Initialize matrix of zeros
+    rows = len(s)+1
+    cols = len(t)+1
+    distance = np.zeros((rows,cols),dtype = int)
+
+    # Populate matrix of zeros with the indeces of each character of both strings
+    for i in range(1, rows):
+        for k in range(1,cols):
+            distance[i][0] = i
+            distance[0][k] = k
+
+    # Iterate over the matrix to compute the cost of deletions,insertions and/or substitutions
+    for col in range(1, cols):
+        for row in range(1, rows):
+            if s[row-1] == t[col-1]:
+                cost = 0 # If the characters are the same in the two strings in a given position [i,j] then the cost is 0
+            else:
+                # If we choose to calculate the ratio the cost of a substitution is 2.
+                cost = 2
+
+            distance[row][col] = min(distance[row-1][col] + 1,      # Cost of deletions
+                                 distance[row][col-1] + 1,          # Cost of insertions
+                                 distance[row-1][col-1] + cost)     # Cost of substitutions
+
+    # Computation of the Levenshtein Distance Ratio
+    Ratio = ((len(s)+len(t)) - distance[row][col]) / (len(s)+len(t))
+    return Ratio
+
 
 DIST = {
-    #"h_sender": spatial.distance.cosine,
-    #"h_rnn_sender": flatten_cos,
-    #"h_receiver": spatial.distance.cosine,
-    #"h_rnn_receiver": flatten_cos,
-    #"targets": spatial.distance.hamming,
-    "messages": on_hot_hamming,
+    "h_sender": spatial.distance.cosine,
+    "h_rnn_sender": flatten_cos,
+    "h_receiver": spatial.distance.cosine,
+    "h_rnn_receiver": flatten_cos,
+    "targets": spatial.distance.hamming,
+    "ham_messages": on_hot_hamming,
+    "lev_messages": levenshtein_ratio_and_distance
 }
 
 def main(args):
@@ -91,15 +135,28 @@ def main(args):
     # Calculate Cross-Seed RSA for all
     seed_folders = glob.glob(f"{path}/*")
 
+    # we are not interested in cross-seed RSA for targets
+    DIST.pop('targets')
+
     RESULTS = {}
-    for space in tqdm(DIST):
-        RESULTS[space] = {}
+
+    for sp in tqdm(DIST):
+
+        # use key messages for hamming and lev distance, since data is saved in that way
+        if sp == "ham_messages" or sp == "lev_messages":
+            space = "messages"
+        # use regular keys for other datapoints
+        else:
+            space = sp
+
+        RESULTS[sp] = {}
+
         for s1, s2 in combinations(seed_folders, 2):
 
             seed1 = s1.split("/")[-1]
             seed2 = s2.split("/")[-1]
 
-            RESULTS[space][seed1 + seed2] = {}
+            RESULTS[sp][seed1 + seed2] = {}
 
             files_s1 = glob.glob(f"{s1}/*.pkl")
             for f1 in files_s1:
@@ -111,14 +168,9 @@ def main(args):
                     m1 = pickle.load(open(f1, "rb"))
                     m2 = pickle.load(open(f2, "rb"))
 
-                    print(one_hot(m1[space][3], n_cols=VOCAB).flatten())
-
-                    print(m1[space][3])
-                    print(m2[space][3])
-                    print(DIST[space])
-
-                    r = rsa(m1[space], m2[space], DIST[space], DIST[space])
-                    RESULTS[space][seed1 + seed2][iteration] = r
+                    # use actual space for to extract data and sp to differentiate message similarity spaces
+                    r = rsa(m1[space], m2[space], DIST[sp], DIST[sp], number_of_samples=args.samples)
+                    RESULTS[sp][seed1 + seed2][iteration] = r
 
     pickle.dump(RESULTS, open(f"{path}/rsa_analysis.pkl", "wb"))
 
