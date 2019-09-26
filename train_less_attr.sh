@@ -3,8 +3,8 @@
 echo "Running baseline"
 for seed in {1..10} 
   do
-    python main.py --seed $seed --attributes 4 --resume
+    python main.py --seed $seed --vocab-size 5 --max-length 5 --distractors 7
   done
 
-#echo "Computing RSAs"
-#python compute_rsas.py --attributes 4
+echo "Computing RSAs"
+python compute_rsas.py --vocab-size 5 --max-length 5 --samples 1000

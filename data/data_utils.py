@@ -56,11 +56,19 @@ class ReferentialSampler(Sampler):
                 np.array(
                     [t]
                     + random.sample(
-                        list(range(t - 1)) + list(range(t, self.n)), self.k
+                        list(range(t)) + list(range(t + 1, self.n)), self.k
                     ),
                     dtype=int,
                 )
             )
+
+        # DEBUGGING PURPOSES
+        # for i, your_list in enumerate(indices):
+        #     if len(your_list) != len(set(your_list)):
+        #         print(i)
+        #         print(your_list)
+        #         print('problem here')
+
         return iter(indices)
 
     def __len__(self):
@@ -70,7 +78,8 @@ class ReferentialSampler(Sampler):
 def get_attributes(nr_attributes):
 
     # configure attributes
-    attributes = [3, 3, 2, 3, 3]
+    #attributes = [3, 3, 2, 3, 3]
+    attributes = [3, 3, 3, 3, 3]
 
     # decide how many attributes to generate
     gen_attr = attributes[:nr_attributes]
@@ -108,7 +117,7 @@ def get_referential_dataloader(
     if os.path.exists(file_path):
         return np.load(file_path)
     else:
-
+        print("Generating dataset...")
         # create the attribute vector here
         data = generate_dataset(gen_attr)
 

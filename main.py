@@ -94,6 +94,12 @@ def parse_arguments(args):
         type=int,
         default=5
     )
+    parser.add_argument(
+        "--distractors",
+        help="Decide on the amount of distractors to use",
+        type=int,
+        default=3
+    )
 
     args = parser.parse_args(args)
 
@@ -161,13 +167,12 @@ def main(args):
         seed_torch()
 
     # initialize dataset
-    train_data = get_referential_dataloader("shapes", gen_attr, shuffle=True)
-    valid_data = get_referential_dataloader("shapes", gen_attr)
+    train_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors, batch_size=args.batch_size) #shuffle=True
+    valid_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors, batch_size=args.batch_size)
 
     # Train
     while iteration < args.iterations:
         for (targets, distractors) in train_data:
-
             train_one_batch(model, optimizer, targets, distractors)
 
             if iteration % args.log_interval == 0:

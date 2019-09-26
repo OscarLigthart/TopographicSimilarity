@@ -34,6 +34,7 @@ class ReferentialTrainer(nn.Module):
         return messages
 
     def forward(self, target, distractors):
+
         batch_size = target.shape[0]
 
         target = target.to(device)

@@ -292,8 +292,7 @@ class Sender(nn.Module):
             output.append(token)
 
             self._calculate_seq_len(seq_lengths, token, initial_length, seq_pos=i + 1)
-        print(torch.stack(output, dim=1).shape)
-        quit()
+
         return (
             torch.stack(output, dim=1),
             seq_lengths,

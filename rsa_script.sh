@@ -3,7 +3,7 @@
 echo "Computing RSA's"
 for attribute in {2..5}
   do
-    python compute_rsas.py --attributes $attribute --samples 1000
+    python compute_rsas.py --attributes $attribute --samples 1000 --max-length 5 --vocab-size 5
   done
 
-python compute_rsas.py --same-date True --samples 1000
+

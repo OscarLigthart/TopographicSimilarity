@@ -14,8 +14,6 @@ from tqdm import tqdm
 import numpy as np
 
 
-VOCAB = 28  # Vocab size + 3 special case tokens (eos, sos, pad)
-
 def parse_arguments(args):
     """
     Determines on which experiment RSA needs to be calculated
@@ -42,6 +40,20 @@ def parse_arguments(args):
         type=int,
         default=None,
         help="determine whether data is created on same seed or not"
+    )
+    parser.add_argument(
+        "--max-length",
+        type=int,
+        default=10,
+        metavar="N",
+        help="max sentence length allowed for communication (default: 10)",
+    )
+    parser.add_argument(
+        "--vocab-size",
+        type=int,
+        default=25,
+        metavar="N",
+        help="Size of vocabulary (default: 25)",
     )
 
     args = parser.parse_args(args)
@@ -115,8 +127,13 @@ def main(args):
     # retrieve arguments
     args = parse_arguments(args)
 
+    # make vocab global so other functions can access it as well
+    global VOCAB
+    VOCAB = args.vocab_size + 3
+
     # determine path to calculate Cross-Seed RSA on
-    path = "runs/lstm_h_64_lr_0.001_max_len_10_vocab_25"
+    path = "runs/lstm_h_64_lr_0.001_max_len_{}_vocab_{}".format(args.max_length, args.vocab_size)
+
     if args.same_data:
         path += "_same_data"
     path += "_attr_{}".format(args.attributes)
@@ -167,6 +184,12 @@ def main(args):
 
                     m1 = pickle.load(open(f1, "rb"))
                     m2 = pickle.load(open(f2, "rb"))
+
+                    # print(m1[space])
+                    # print(m2[space])
+                    # print(DIST[sp])
+                    # print(DIST[sp])
+                    # quit()
 
                     # use actual space for to extract data and sp to differentiate message similarity spaces
                     r = rsa(m1[space], m2[space], DIST[sp], DIST[sp], number_of_samples=args.samples)
