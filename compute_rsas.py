@@ -55,6 +55,12 @@ def parse_arguments(args):
         metavar="N",
         help="Size of vocabulary (default: 25)",
     )
+    parser.add_argument(
+        "--distractors",
+        help="Decide on the amount of distractors to use",
+        type=int,
+        default=3
+    )
 
     args = parser.parse_args(args)
     return args
@@ -132,7 +138,8 @@ def main(args):
     VOCAB = args.vocab_size + 3
 
     # determine path to calculate Cross-Seed RSA on
-    path = "runs/lstm_h_64_lr_0.001_max_len_{}_vocab_{}".format(args.max_length, args.vocab_size)
+    #path = "runs/lstm_h_64_lr_0.001_max_len_{}_vocab_{}".format(args.max_length, args.vocab_size)
+    path = "runs/lstm_max_len_{}_vocab_{}".format(args.max_length, args.vocab_size, args.distractors)
 
     if args.same_data:
         path += "_same_data"

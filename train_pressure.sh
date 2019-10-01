@@ -1,14 +1,29 @@
 #!/bin/bash
 
-echo "Running..."
-for attr in {2..5}
+# higher pressure runs
+echo "Running higher pressure"
+# create vocab array
+array=( 3 5 )
+for i in "${array[@]}"
   do
-    for seed in {1..10}
+    for seed in {1..10} 
       do
-        python main.py --seed $seed --attributes $attr --vocab-size 50 --max-length 15
+        python main.py --seed $seed --vocab-size $i --max-length 5
       done
-    
+
     echo "Computing RSAs"
-    python compute_rsas.py --attributes $attr --samples 1000 --vocab-size 50 --max-length 15
+    python compute_rsas.py --samples 1000 --vocab-size $i --max-length 5
   done
-                     
+
+
+
+# lower pressure runs
+echo "Running lower pressure"
+for seed in {1..10} 
+  do
+    python main.py --seed $seed --vocab-size 50
+  done
+
+echo "Computing RSAs"
+python compute_rsas.py --samples 1000 --vocab-size 50
+

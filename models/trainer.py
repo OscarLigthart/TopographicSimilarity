@@ -22,12 +22,15 @@ class ReferentialTrainer(nn.Module):
             len(seq_lengths), max_len
         ) < seq_lengths.unsqueeze(1)
 
+        # todo use debugger here to find out what exactly is happening, comments are weird
+        # todo 3 ***AUTOMATICALLY DONE?*** set the pad token to the correct integer
         if self.training:
             mask = mask.type(dtype=messages.dtype)
             messages = messages * mask.unsqueeze(2)
-            # give full probability (1) to eos tag (used as padding in this case)
+            # give full probability (1) to padding tag
             messages[:, :, self.sender.pad_id] += (mask == 0).type(dtype=messages.dtype)
         else:
+            # todo seq length never shorted than max len if not training
             # fill in the rest of message with eos
             messages = messages.masked_fill_(mask == 0, self.sender.pad_id)
 

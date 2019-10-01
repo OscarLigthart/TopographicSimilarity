@@ -39,7 +39,8 @@ class Receiver(nn.Module):
     ):
         super().__init__()
 
-        self.vocab_size = vocab.full_vocab_size
+        self.full_vocab_size = vocab.full_vocab_size
+        self.vocab_size = vocab.vocab_size + 1
 
         self.embedding_size = embedding_size
         self.hidden_size = hidden_size
@@ -53,8 +54,9 @@ class Receiver(nn.Module):
                 "Receiver case with cell_type '{}' is undefined".format(cell_type)
             )
 
+        # vocab size + 1 due to the extra sos token which the agent shouldnt be able to access
         self.embedding = nn.Parameter(
-            torch.empty((self.vocab_size, embedding_size), dtype=torch.float32)
+            torch.empty((self.full_vocab_size, embedding_size), dtype=torch.float32)
         )
 
         self.output_module = nn.Identity()
@@ -116,8 +118,11 @@ class Sender(nn.Module):
     ):
         super().__init__()
 
+        # todo 2 ***DONE***, change vocab size to vocab + 1, agent only has access to vocabulary and eos token
+        # todo agent still has access to the start of string token
         # set vocab
-        self.vocab_size = vocab.full_vocab_size
+        self.vocab_size = vocab.vocab_size + 1
+        self.full_vocab_size = vocab.full_vocab_size
         self.sos_id = vocab.sos
         self.eos_id = vocab.eos
         self.pad_id = vocab.pad
@@ -142,7 +147,7 @@ class Sender(nn.Module):
             )
 
         self.embedding = nn.Parameter(
-            torch.empty((self.vocab_size, embedding_size), dtype=torch.float32)
+            torch.empty((self.full_vocab_size, embedding_size), dtype=torch.float32)
         )
 
         self.linear_out = nn.Linear(
@@ -217,8 +222,10 @@ class Sender(nn.Module):
             mask = (vocab_index == self.eos_id) * (max_predicted == 1.0)
         else:
             mask = token == self.eos_id
+
         mask *= seq_lengths == initial_length
         seq_lengths[mask.nonzero()] = seq_pos + 1  # start token always appended
+
 
     def forward(self, hidden_state, tau=1.2):
         """
@@ -231,10 +238,12 @@ class Sender(nn.Module):
         state, batch_size = self._init_state(hidden_state, type(self.rnn))
 
         # Init output
+        # we apply self.vocab_size + 1 due to the extra sos token.
+        # the agent should not have access to it so it should not be found in the vocab
         if self.training:
             output = [
                 torch.zeros(
-                    (batch_size, self.vocab_size), dtype=torch.float32, device=device
+                    (batch_size, self.full_vocab_size), dtype=torch.float32, device=device
                 )
             ]
             output[0][:, self.sos_id] = 1.0
@@ -261,6 +270,9 @@ class Sender(nn.Module):
         # todo starts with a sos token (for the entire batch) and gradually adds tokens
         # todo output shape is of [batch_size x seq_len x vocab_size]
         for i in range(self.output_len):
+
+            # matmul only on training since we use one hot vector during training and
+            # index values during validation
             if self.training:
                 emb = torch.matmul(output[-1], self.embedding)
             else:
@@ -277,9 +289,17 @@ class Sender(nn.Module):
             p = F.softmax(self.linear_out(h), dim=1)
             entropy += Categorical(p).entropy()
 
+            # gumbel softmax returns one hot vectors
             if self.training:
                 token = _gumbel_softmax(p, tau, hard=True)
+
+                # add the start of string and padding index to the token in the form of a 0
+                # we insert 0 because agents can never choose sos or pad tokens
+                sos_index = torch.zeros(batch_size, 2)
+                token = torch.cat((token, sos_index), dim=1)
+
             else:
+                # during validation we return index values of vocabulary
                 if self.greedy:
                     _, token = torch.max(p, -1)
 

@@ -47,19 +47,23 @@ class AgentVocab(object):
         self.itos = []
 
         # 0 is reserved for padding
-        self.itos.append(self.PAD_TOKEN)
-        self.stoi[self.PAD_TOKEN] = 0
+        #self.itos.append(self.PAD_TOKEN)
+        #self.stoi[self.PAD_TOKEN] = 0
 
         # add vocab tokens to itos and stoi
-        for i in range(1, self.vocab_size + 1):
+        for i in range(0, self.vocab_size):
             self.itos.append(str(i))
             self.stoi[str(i)] = i
 
+        # todo ***DONE*** #1 add the PAD here, after the eos token so the agent has no access to it
+        # todo instead of the pad as 0
         # add sos and eos
-        self.itos.append(self.SOS_TOKEN)
-        self.stoi[self.SOS_TOKEN] = len(self.itos) - 1
         self.itos.append(self.EOS_TOKEN)
         self.stoi[self.EOS_TOKEN] = len(self.itos) - 1
+        self.itos.append(self.SOS_TOKEN)
+        self.stoi[self.SOS_TOKEN] = len(self.itos) - 1
+        self.itos.append(self.PAD_TOKEN)
+        self.stoi[self.PAD_TOKEN] = len(self.itos) - 1
 
         self.pad = self.stoi[self.PAD_TOKEN]
         self.sos = self.stoi[self.SOS_TOKEN]

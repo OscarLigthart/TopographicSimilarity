@@ -62,13 +62,6 @@ class ReferentialSampler(Sampler):
                 )
             )
 
-        # DEBUGGING PURPOSES
-        # for i, your_list in enumerate(indices):
-        #     if len(your_list) != len(set(your_list)):
-        #         print(i)
-        #         print(your_list)
-        #         print('problem here')
-
         return iter(indices)
 
     def __len__(self):
@@ -79,7 +72,7 @@ def get_attributes(nr_attributes):
 
     # configure attributes
     #attributes = [3, 3, 2, 3, 3]
-    attributes = [3, 3, 3, 3, 3]
+    attributes = [3, 3, 3, 3, 3, 2, 2, 2]
 
     # decide how many attributes to generate
     gen_attr = attributes[:nr_attributes]

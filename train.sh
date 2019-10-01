@@ -1,10 +1,16 @@
 #!/bin/bash
 
+# baseline experiment
 echo "Running baseline"
 for seed in {1..10} 
   do
-    python main.py --seed $seed --vocab-size 5 --max-length 5
+    python main.py --seed $seed
   done
 
 echo "Computing RSAs"
-python compute_rsas.py --vocab-size 5 --max-length 5 --samples 1000
+python compute_rsas.py --samples 1000
+
+
+
+
+

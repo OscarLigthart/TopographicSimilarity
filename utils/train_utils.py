@@ -68,6 +68,7 @@ def evaluate(model, data) -> dict:
     model.eval()
     with torch.no_grad():
         for (targets, distractors) in data:
+
             T.append(targets)
             D.append(torch.cat(distractors, 0))
 
@@ -112,7 +113,6 @@ def get_filename(params: dict) -> str:
     #name += "_lr_{}".format(params.lr)
     name += "_max_len_{}".format(params.max_length)
     name += "_vocab_{}".format(params.vocab_size)
-    name += "_distract_{}".format(params.distractors)
 
     if params.same_data:
         name += "_same_data"

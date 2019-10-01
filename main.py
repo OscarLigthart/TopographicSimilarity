@@ -167,7 +167,7 @@ def main(args):
         seed_torch()
 
     # initialize dataset
-    train_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors, batch_size=args.batch_size) #shuffle=True
+    train_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors, batch_size=args.batch_size, shuffle=True)
     valid_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors, batch_size=args.batch_size)
 
     # Train

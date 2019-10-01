@@ -15,7 +15,7 @@ def load_trained_models(args, vocab, gen_attr):
 
     all_models = []
 
-    for seed in range(1,11):
+    for seed in range(1, 11):
         # get sender and receiver models
         sender = Sender(
             vocab,
