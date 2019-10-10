@@ -119,6 +119,9 @@ def get_filename(params: dict) -> str:
 
     name += "_attr_{}".format(params.attributes)
 
+    if params.related:
+        name += "_related"
+
     return name
 
 

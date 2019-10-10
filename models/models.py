@@ -29,6 +29,12 @@ def _gumbel_softmax(probs, tau: float, hard: bool):
 
 
 class Receiver(nn.Module):
+    """
+    This class represents the Receiver agent in a referential game.
+    It receives the message sent by the sender along with the target and some distractors.
+    Its objective is to successfully predict the target based on the message it receives.
+
+    """
     def __init__(
         self,
         vocab: AgentVocab,
@@ -106,6 +112,11 @@ class Receiver(nn.Module):
 
 
 class Sender(nn.Module):
+    """
+    Class that represents the Sender agent in a referential game.
+    It receives the target and tries to capture the properties of that target in natural language.
+
+    """
     def __init__(
         self,
         vocab: AgentVocab,
@@ -118,8 +129,6 @@ class Sender(nn.Module):
     ):
         super().__init__()
 
-        # todo 2 ***DONE***, change vocab size to vocab + 1, agent only has access to vocabulary and eos token
-        # todo agent still has access to the start of string token
         # set vocab
         self.vocab_size = vocab.vocab_size + 1
         self.full_vocab_size = vocab.full_vocab_size
@@ -210,7 +219,7 @@ class Sender(nn.Module):
         """
             Calculates the lengths of each sequence in the batch in-place.
             The length goes from the start of the sequence up until the eos_id is predicted.
-            If it is not predicted, then the length is output_len + n_sos_symbols.
+            If it is not predicted, then the length is output_len + 1 (sos_symbols).
             Args:
                 seq_lengths (torch.tensor): To keep track of the sequence lengths.
                 token (torch.tensor): Batch of predicted tokens at this timestep.
@@ -266,18 +275,18 @@ class Sender(nn.Module):
         embeds = []  # keep track of the embedded sequence
         entropy = 0.0
 
-        # todo why output[-1] --> because you always take the last character for the RNN (this
-        # todo starts with a sos token (for the entire batch) and gradually adds tokens
-        # todo output shape is of [batch_size x seq_len x vocab_size]
+        # loop through the entire output length
         for i in range(self.output_len):
 
             # matmul only on training since we use one hot vector during training and
-            # index values during validation
+            # index values during validation. We take the last character output of the RNN and use it
+            # as input for the next character
             if self.training:
                 emb = torch.matmul(output[-1], self.embedding)
             else:
                 emb = self.embedding[output[-1]]
 
+            # feed the embedded token to the RNN
             embeds.append(emb)
             state = self.rnn(emb, state)
 
@@ -286,6 +295,7 @@ class Sender(nn.Module):
             else:
                 h = state
 
+            # get a probability for a given token from the vocabulary
             p = F.softmax(self.linear_out(h), dim=1)
             entropy += Categorical(p).entropy()
 
@@ -311,6 +321,7 @@ class Sender(nn.Module):
 
             output.append(token)
 
+            # calculate the sequence lengths for messages
             self._calculate_seq_len(seq_lengths, token, initial_length, seq_pos=i + 1)
 
         return (

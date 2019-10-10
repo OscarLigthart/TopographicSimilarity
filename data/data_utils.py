@@ -1,14 +1,16 @@
 import numpy as np
 import random
 import os
+from scipy import spatial
+from collections import defaultdict
 
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import Sampler, BatchSampler
 
 from .generate_dataset import generate_dataset
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 class ReferentialDataset(Dataset):
     """
@@ -36,8 +38,14 @@ class ReferentialDataset(Dataset):
 
 
 class ReferentialSampler(Sampler):
-    def __init__(self, data_source, k: int = 3, shuffle: bool = False):
+    def __init__(self, data_source, samples, related: bool = False, k: int = 3, shuffle: bool = False):
         self.data_source = data_source
+
+        # beforehand, for every sample, we gather a list of objects that are fundamentally similar
+        # to that sample. We sample randomly from this list to gather distractors --> should be a dictionary
+        self.samples = samples
+        self.related = related
+
         self.n = len(data_source)
         self.k = k
         self.shuffle = shuffle
@@ -51,16 +59,33 @@ class ReferentialSampler(Sampler):
             random.shuffle(targets)
 
         for t in targets:
-            # target in first position with k random distractors following
-            indices.append(
-                np.array(
-                    [t]
-                    + random.sample(
-                        list(range(t)) + list(range(t + 1, self.n)), self.k
-                    ),
-                    dtype=int,
+
+            # if we only want to sample related targets we use the enclosed dictionary holding these
+            if self.related:
+
+                # target in first position with k random distractors following
+                indices.append(
+                    np.array(
+                        [t]
+                        + random.sample(
+                            self.samples[t], self.k
+                        ),
+                        dtype=int,
+                    )
                 )
-            )
+
+            # if we want completely random targets we just randomly sample from the entire dataset
+            else:
+                # target in first position with k random distractors following
+                indices.append(
+                    np.array(
+                        [t]
+                        + random.sample(
+                            list(range(t)) + list(range(t + 1, self.n)), self.k
+                        ),
+                        dtype=int,
+                    )
+                )
 
         return iter(indices)
 
@@ -91,9 +116,44 @@ def get_attributes(nr_attributes):
     return gen_attr
 
 
+def get_close_samples(dataset, threshold=0.2):
+    """
+    This function takes the dataset filled with symbolic objects and
+    finds closely related samples for each sample. It then returns a
+    dictionary holding all samples along with a list of closely
+    related samples for each sample.
+    :param dataset: the set of samples
+    :param threshold: value with which we decide the manner of required
+                      similarity to make it as a distractor (value of 0.2 only allows one attribute to be different)
+    :return:
+    """
+
+    # create dictionary in which we save possible distractors for every target
+    samples = defaultdict(list)
+    # convert to index, for every index, get close samples
+    for t_index, target in enumerate(dataset):
+
+        # go through all possible distractors
+        for d_index, distractor in enumerate(dataset):
+
+            # check if we're not comparing the same sample
+            if t_index == d_index:
+                continue
+
+            # get distance between target and possible distractor object
+            dist = spatial.distance.hamming(target, distractor)
+
+            # if target and distractor are closely related, add the distractor
+            # to the target in dict
+            if dist < threshold:
+                samples[t_index].append(d_index)
+
+    return samples
+
+
 def get_referential_dataloader(
     file_name: str, gen_attr: list, batch_size: int = 32, shuffle: bool = False, k: int = 3
-):
+    , split=False, related=False):
     """
     Splits a pytorch dataset into different sizes of dataloaders
     Args:
@@ -112,17 +172,23 @@ def get_referential_dataloader(
     else:
         print("Generating dataset...")
         # create the attribute vector here
-        data = generate_dataset(gen_attr)
+        data = generate_dataset(gen_attr, split)
 
         # save locally
         # np.save(file_path, data)
+
+    # create the dictionary filled with closely related samples (if required)
+    if related:
+        samples = get_close_samples(data)
+    else:
+        samples = None
 
     dataset = ReferentialDataset(data)
     return DataLoader(
         dataset,
         pin_memory=True,
         batch_sampler=BatchSampler(
-            ReferentialSampler(dataset, k=k, shuffle=shuffle),
+            ReferentialSampler(dataset, samples, related=related, k=k, shuffle=shuffle),
             batch_size=batch_size,
             drop_last=False,
         ),

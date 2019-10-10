@@ -100,6 +100,12 @@ def parse_arguments(args):
         type=int,
         default=3
     )
+    parser.add_argument(
+        "--related",
+        help="Decide whether to use distractors that are semantically similar to the targets",
+        type=bool,
+        default=False
+    )
 
     args = parser.parse_args(args)
 
@@ -167,12 +173,15 @@ def main(args):
         seed_torch()
 
     # initialize dataset
-    train_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors, batch_size=args.batch_size, shuffle=True)
-    valid_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors, batch_size=args.batch_size)
+    train_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors,
+                                            batch_size=args.batch_size, shuffle=True, related=args.related)
+    valid_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors,
+                                            batch_size=args.batch_size, related=args.related)
 
     # Train
     while iteration < args.iterations:
         for (targets, distractors) in train_data:
+
             train_one_batch(model, optimizer, targets, distractors)
 
             if iteration % args.log_interval == 0:

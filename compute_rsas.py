@@ -61,6 +61,12 @@ def parse_arguments(args):
         type=int,
         default=3
     )
+    parser.add_argument(
+        "--related",
+        help="Decide whether to use distractors that are semantically similar to the targets",
+        type=bool,
+        default=False
+    )
 
     args = parser.parse_args(args)
     return args
@@ -144,6 +150,8 @@ def main(args):
     if args.same_data:
         path += "_same_data"
     path += "_attr_{}".format(args.attributes)
+    if args.related:
+        path += "_related"
 
     metric_files = glob.glob(f"{path}/*/*.pkl")
 
@@ -191,12 +199,6 @@ def main(args):
 
                     m1 = pickle.load(open(f1, "rb"))
                     m2 = pickle.load(open(f2, "rb"))
-
-                    # print(m1[space])
-                    # print(m2[space])
-                    # print(DIST[sp])
-                    # print(DIST[sp])
-                    # quit()
 
                     # use actual space for to extract data and sp to differentiate message similarity spaces
                     r = rsa(m1[space], m2[space], DIST[sp], DIST[sp], number_of_samples=args.samples)

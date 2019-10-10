@@ -15,7 +15,7 @@ def one_hot(a, n_cols: Optional[int] = None):
     return out
 
 
-def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES):
+def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES, split = False):
     """
     Generates a dataset based on the vector of attributes passed
     """
@@ -38,4 +38,21 @@ def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES):
 
     # randomly samply from possible combinations
     # idxs = np.random.choice(range(len(one_hot_derivations)), size, replace=True)
+
+    # optionally split dataset
+
+    # conditional
+    if split:
+
+        # get every 10th
+        k = 10
+        samples = one_hot_derivations[0::k]
+
+        # save selected samples
+
+
+        # delete sampels from dataset
+        one_hot_derivations = np.delete(one_hot_derivations, np.arange(0, len(one_hot_derivations), k), 0)
+
+
     return one_hot_derivations
