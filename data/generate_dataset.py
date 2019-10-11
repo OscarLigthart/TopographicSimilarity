@@ -39,7 +39,7 @@ def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES, split = False)
     # randomly samply from possible combinations
     # idxs = np.random.choice(range(len(one_hot_derivations)), size, replace=True)
 
-    # optionally split dataset
+    # optionally split dataset todo check if this is still required
 
     # conditional
     if split:

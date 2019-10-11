@@ -76,6 +76,7 @@ class ReferentialSampler(Sampler):
 
             # if we want completely random targets we just randomly sample from the entire dataset
             else:
+
                 # target in first position with k random distractors following
                 indices.append(
                     np.array(
@@ -96,7 +97,6 @@ class ReferentialSampler(Sampler):
 def get_attributes(nr_attributes):
 
     # configure attributes
-    #attributes = [3, 3, 2, 3, 3]
     attributes = [3, 3, 3, 3, 3, 2, 2, 2]
 
     # decide how many attributes to generate
@@ -105,10 +105,8 @@ def get_attributes(nr_attributes):
     # first calculate the amount of samples created
     total_attr = np.prod(gen_attr)
 
-    # make sure the dataset holds at least 50 samples, by adding dimensions to attributes
-    # todo, discuss a better way of doing this
-
-    while total_attr < 150 and all(i >= 2 for i in gen_attr):
+    # make sure the dataset holds at least 150 samples, by adding dimensions to attributes
+    while total_attr < 150:  # and all(i >= 2 for i in gen_attr):
         index = np.argmin(gen_attr)
         gen_attr[index] += 1
         total_attr = np.prod(gen_attr)
@@ -130,6 +128,7 @@ def get_close_samples(dataset, threshold=0.2):
 
     # create dictionary in which we save possible distractors for every target
     samples = defaultdict(list)
+
     # convert to index, for every index, get close samples
     for t_index, target in enumerate(dataset):
 
@@ -143,9 +142,23 @@ def get_close_samples(dataset, threshold=0.2):
             # get distance between target and possible distractor object
             dist = spatial.distance.hamming(target, distractor)
 
+            # todo OPTIONAL (if results are promising): take only the distractors that differ on a single attribute
+            # use gen attr = [3,3,3,3,3] --> take some of elements up until the length to choose index
+            # i = np.random.randint(0,len(gen_attr))
+
+            # get start index for binary string
+            # b_start = sum(gen_attr[:i])
+
+            # get end index for binary string
+            # b_end = b_start + gen_attr[i]
+
             # if target and distractor are closely related, add the distractor
             # to the target in dict
             if dist < threshold:
+
+                # if b_start to b_end are the same for target and distractor, we skip it, otherwise we add it
+                # if not np.array_equal(target[b_start:b_end], distractor[b_start:b_end]):
+
                 samples[t_index].append(d_index)
 
     return samples

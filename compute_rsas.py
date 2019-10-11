@@ -125,8 +125,7 @@ DIST = {
     "h_receiver": spatial.distance.cosine,
     "h_rnn_receiver": flatten_cos,
     "targets": spatial.distance.hamming,
-    "ham_messages": on_hot_hamming,
-    "lev_messages": levenshtein_ratio_and_distance
+    "messages": on_hot_hamming
 }
 
 def main(args):
@@ -144,7 +143,6 @@ def main(args):
     VOCAB = args.vocab_size + 3
 
     # determine path to calculate Cross-Seed RSA on
-    #path = "runs/lstm_h_64_lr_0.001_max_len_{}_vocab_{}".format(args.max_length, args.vocab_size)
     path = "runs/lstm_max_len_{}_vocab_{}".format(args.max_length, args.vocab_size, args.distractors)
 
     if args.same_data:
@@ -155,20 +153,25 @@ def main(args):
 
     metric_files = glob.glob(f"{path}/*/*.pkl")
 
-    # for file in tqdm(metric_files):
-    #     m = pickle.load(open(file, "rb"))
-    #     for (space_x, space_y) in combinations(list(DIST.keys()), 2):
-    #         rsa_title = f"RSA:{space_x}/{space_y}"
-    #         if rsa_title not in m:
-    #             r = rsa(m[space_x], m[space_y], DIST[space_x], DIST[space_y])
-    #             m[rsa_title] = r
-    #     pickle.dump(m, open(file, "wb"))
+    for file in tqdm(metric_files):
+        m = pickle.load(open(file, "rb"))
+        for (space_x, space_y) in combinations(list(DIST.keys()), 2):
+            rsa_title = f"RSA:{space_x}/{space_y}"
+            #if rsa_title not in m:
+            r = rsa(m[space_x], m[space_y], DIST[space_x], DIST[space_y], number_of_samples=args.samples)
+            m[rsa_title] = r
+
+        pickle.dump(m, open(file, "wb"))
 
     # Calculate Cross-Seed RSA for all
     seed_folders = glob.glob(f"{path}/*")
 
     # we are not interested in cross-seed RSA for targets
     DIST.pop('targets')
+    DIST.pop('messages')
+
+    DIST["ham_messages"] = on_hot_hamming
+    DIST["lev_messages"] = levenshtein_ratio_and_distance
 
     RESULTS = {}
 
@@ -183,6 +186,7 @@ def main(args):
 
         RESULTS[sp] = {}
 
+        # compare every seed to all others
         for s1, s2 in combinations(seed_folders, 2):
 
             seed1 = s1.split("/")[-1]
@@ -190,13 +194,22 @@ def main(args):
 
             RESULTS[sp][seed1 + seed2] = {}
 
+            # load all metric files
             files_s1 = glob.glob(f"{s1}/*.pkl")
+
+            # get the first file
             for f1 in files_s1:
+
+                # parse the path to get the second file
                 metric_file = f1.split("/")[-1]
                 iteration = int(metric_file.split("_")[-1].split(".")[0])
+
+                # get second file
                 f2 = f"{s2}/{metric_file}"
+
                 if os.path.isfile(f2):
 
+                    # load the different rsa analysis files
                     m1 = pickle.load(open(f1, "rb"))
                     m2 = pickle.load(open(f2, "rb"))
 
@@ -204,6 +217,7 @@ def main(args):
                     r = rsa(m1[space], m2[space], DIST[sp], DIST[sp], number_of_samples=args.samples)
                     RESULTS[sp][seed1 + seed2][iteration] = r
 
+    # save results
     pickle.dump(RESULTS, open(f"{path}/rsa_analysis.pkl", "wb"))
 
 
