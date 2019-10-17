@@ -67,6 +67,12 @@ def parse_arguments(args):
         type=bool,
         default=False
     )
+    parser.add_argument(
+        "--split",
+        help="Decide whether to use all generated samples or keep some apart for testing generalization",
+        type=bool,
+        default=False
+    )
 
     args = parser.parse_args(args)
     return args
@@ -145,11 +151,14 @@ def main(args):
     # determine path to calculate Cross-Seed RSA on
     path = "runs/lstm_max_len_{}_vocab_{}".format(args.max_length, args.vocab_size, args.distractors)
 
+    # get correct path name, based on parameters
     if args.same_data:
         path += "_same_data"
     path += "_attr_{}".format(args.attributes)
     if args.related:
         path += "_related"
+    if args.split:
+        path += "_split"
 
     metric_files = glob.glob(f"{path}/*/*.pkl")
 

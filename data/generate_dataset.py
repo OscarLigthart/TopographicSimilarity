@@ -1,6 +1,7 @@
 import itertools
 import numpy as np
 from typing import Optional
+import pickle
 
 # 3 colors, 3 shapes, 2 sizes, 3 position y, 3 position x
 SHAPES_ATTRIBUTES = [3, 3, 2, 3, 3]
@@ -15,7 +16,7 @@ def one_hot(a, n_cols: Optional[int] = None):
     return out
 
 
-def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES, split = False):
+def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES, split=False):
     """
     Generates a dataset based on the vector of attributes passed
     """
@@ -39,9 +40,7 @@ def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES, split = False)
     # randomly samply from possible combinations
     # idxs = np.random.choice(range(len(one_hot_derivations)), size, replace=True)
 
-    # optionally split dataset todo check if this is still required
-
-    # conditional
+    # optionally split dataset
     if split:
 
         # get every 10th
@@ -49,10 +48,9 @@ def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES, split = False)
         samples = one_hot_derivations[0::k]
 
         # save selected samples
-
+        pickle.dump(samples, open("generalize_set.p", "wb"))
 
         # delete sampels from dataset
         one_hot_derivations = np.delete(one_hot_derivations, np.arange(0, len(one_hot_derivations), k), 0)
-
 
     return one_hot_derivations

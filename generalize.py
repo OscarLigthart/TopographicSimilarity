@@ -4,9 +4,13 @@ import os
 import torch
 import pickle
 
+from torch.utils.data import Dataset, DataLoader
+from torch.utils.data.sampler import Sampler, BatchSampler
+
 from utils import *
 from data import *
 from models import *
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -43,7 +47,7 @@ def parse_arguments(args):
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=32,
+        default=16,
         metavar="N",
         help="input batch size for training (default: 32)",
     )
@@ -68,20 +72,6 @@ def parse_arguments(args):
         metavar="N",
         help="Adam learning rate (default: 1e-3)",
     )
-
-    parser.add_argument(
-        "--log-interval",
-        type=int,
-        default=200,
-        metavar="N",
-        help="number of iterations between logs (default: 200)",
-    )
-    parser.add_argument(
-        "--resume",
-        help="Resume the training from the saved model state",
-        action="store_true",
-        default=False
-    )
     parser.add_argument(
         "--same-data",
         help="decide whether same seed should be used to shuffle data",
@@ -100,18 +90,7 @@ def parse_arguments(args):
         type=int,
         default=3
     )
-    parser.add_argument(
-        "--related",
-        help="Decide whether to use distractors that are semantically similar to the targets",
-        type=bool,
-        default=False
-    )
-    parser.add_argument(
-        "--split",
-        help="Decide whether to use all generated samples or keep some apart for testing generalization",
-        type=bool,
-        default=False
-    )
+
 
     args = parser.parse_args(args)
 
@@ -121,7 +100,8 @@ def parse_arguments(args):
 def main(args):
     args = parse_arguments(args)
     seed_torch(seed=args.seed)
-    model_name = get_filename(args)
+    #model_name = get_filename(args)
+    model_name = "lstm_max_len_10_vocab_25_attr_5_split"
 
     run_folder = "runs/" + model_name + "/" + str(args.seed)
 
@@ -153,60 +133,37 @@ def main(args):
         output_size=sum(gen_attr),
     )
 
+    # initialize trainer
     model = ReferentialTrainer(sender, receiver)
 
+    # load model
     epoch, iteration = 0, 0
     if args.resume and os.path.isfile(model_path):
         epoch, iteration = load_model_state(model, model_path)
         print(f"Loaded model. Resuming from - epoch: {epoch} | iteration: {iteration}")
 
-    # Print info
-    print("----------------------------------------")
-    print(f"Model name: {model_name} \n|V|: {args.vocab_size}\nL: { args.max_length}")
-    print(model.sender)
-    print(model.receiver)
-    pytorch_total_params = sum(p.numel() for p in model.parameters())
-    print(f"Total number of parameters: {pytorch_total_params}")
+    # get the data
+    data = pickle.load(open("data/generalize_set.p", "rb"))
 
-    # send model to device
-    model.to(device)
+    # we dont need distractor samples
+    samples = None
 
-    # set optimizer
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # create dataloader
+    dataset = ReferentialDataset(data)
+    valid_data = DataLoader(
+        dataset,
+        pin_memory=True,
+        batch_sampler=BatchSampler(
+            ReferentialSampler(dataset, samples, related=False, k=args.distractors, shuffle=False),
+            batch_size=args.batch_size,
+            drop_last=False,
+        ),
+    )
 
-    # set dataseed and dataset here if you wish to use same data
-    if args.same_data:
-        seed_torch()
+    # evaluate the model
+    metrics = evaluate(model, valid_data)
 
-    # initialize dataset
-    train_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors,
-                                            batch_size=args.batch_size, shuffle=True,
-                                            related=args.related, split=args.split)
-    valid_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors,
-                                            batch_size=args.batch_size, related=args.related,
-                                            split=args.split)
-
-    # Train
-    while iteration < args.iterations:
-        for (targets, distractors) in train_data:
-
-            train_one_batch(model, optimizer, targets, distractors)
-
-            if iteration % args.log_interval == 0:
-                print(f"{iteration}/{args.iterations}\r")
-                metrics = evaluate(model, valid_data)
-                save_model_state(model, model_path, epoch, iteration)
-                # pickle.dump(
-                #     metrics, open(run_folder + f"/metrics_at_{iteration}.pkl", "wb")
-                # )
-                print(f"\t\t acc: {metrics['acc']:.3f}\r", end="")
-
-            iteration += 1
-            if iteration >= args.iterations:
-                break
-
-        epoch += 1
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
+    # save the metrics
+    pickle.dump(
+        metrics, open(run_folder + f"/generalize_metrics.pkl", "wb")
+    )

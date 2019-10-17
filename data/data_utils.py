@@ -121,12 +121,16 @@ def get_close_samples(dataset, threshold=0.2):
     dictionary holding all samples along with a list of closely
     related samples for each sample.
     :param dataset: the set of samples
+    :param gen_attr: the amount of attributes describing the data samples
     :param threshold: value with which we decide the manner of required
                       similarity to make it as a distractor (value of 0.2 only allows one attribute to be different)
-    :return:
+    :return: every target will have a dictionary holding all of the attributes, within these attributes there will
+             be a list consisting of the distractors that differ from the target on only that attribute.
+             thus, shape will be:
+                    {target: [attr1: [distractors], attr2: [distractors]]}
     """
 
-    # create dictionary in which we save possible distractors for every target
+    # create dictionary in which we save possible distractors for every target,
     samples = defaultdict(list)
 
     # convert to index, for every index, get close samples
@@ -142,38 +146,29 @@ def get_close_samples(dataset, threshold=0.2):
             # get distance between target and possible distractor object
             dist = spatial.distance.hamming(target, distractor)
 
-            # todo OPTIONAL (if results are promising): take only the distractors that differ on a single attribute
-            # use gen attr = [3,3,3,3,3] --> take some of elements up until the length to choose index
-            # i = np.random.randint(0,len(gen_attr))
-
-            # get start index for binary string
-            # b_start = sum(gen_attr[:i])
-
-            # get end index for binary string
-            # b_end = b_start + gen_attr[i]
-
             # if target and distractor are closely related, add the distractor
             # to the target in dict
             if dist < threshold:
 
-                # if b_start to b_end are the same for target and distractor, we skip it, otherwise we add it
-                # if not np.array_equal(target[b_start:b_end], distractor[b_start:b_end]):
-
+                # append sample
                 samples[t_index].append(d_index)
 
     return samples
 
 
 def get_referential_dataloader(
-    file_name: str, gen_attr: list, batch_size: int = 32, shuffle: bool = False, k: int = 3
-    , split=False, related=False):
+    file_name: str, gen_attr: list, batch_size: int = 32, shuffle: bool = False, k: int = 3,
+        split=False, related=False):
     """
     Splits a pytorch dataset into different sizes of dataloaders
     Args:
-        filename: filename to load
-        Batch size : number of examples per batch_size
+        file_name: filename to load
+        gen_attr: number of attributes to generate
+        batch_size : number of examples per batch_size
         shuffle (bool): whether to shuffle dataset
         k (int): number of distractors
+        split: whether to keep some samples apart for purpose of testing generalization
+        related: whether to save sample distractors based on similarity to targets
     Returns:
         dataloader
     """
