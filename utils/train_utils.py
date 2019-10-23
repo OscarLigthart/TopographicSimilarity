@@ -65,6 +65,7 @@ def evaluate(model, data) -> dict:
     T = []
     D = []
 
+
     model.eval()
     with torch.no_grad():
         for (targets, distractors) in data:

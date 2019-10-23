@@ -44,11 +44,11 @@ def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES, split=False):
     if split:
 
         # get every 10th
-        k = 10
+        k = 3
         samples = one_hot_derivations[0::k]
 
         # save selected samples
-        pickle.dump(samples, open("generalize_set.p", "wb"))
+        pickle.dump(samples, open("data/generalize_set.p", "wb"))
 
         # delete sampels from dataset
         one_hot_derivations = np.delete(one_hot_derivations, np.arange(0, len(one_hot_derivations), k), 0)

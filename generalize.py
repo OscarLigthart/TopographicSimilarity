@@ -47,7 +47,7 @@ def parse_arguments(args):
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=16,
+        default=32,
         metavar="N",
         help="input batch size for training (default: 32)",
     )
@@ -90,18 +90,25 @@ def parse_arguments(args):
         type=int,
         default=3
     )
-
+    parser.add_argument(
+        "--related",
+        help="Decide on the amount of distractors to use",
+        type=bool,
+        default=False
+    )
 
     args = parser.parse_args(args)
-
     return args
 
 
 def main(args):
     args = parse_arguments(args)
+
+    # set split to true since we can only run generalize code on split data
+    args.split = True
+
     seed_torch(seed=args.seed)
-    #model_name = get_filename(args)
-    model_name = "lstm_max_len_10_vocab_25_attr_5_split"
+    model_name = get_filename(args)
 
     run_folder = "runs/" + model_name + "/" + str(args.seed)
 
@@ -137,24 +144,27 @@ def main(args):
     model = ReferentialTrainer(sender, receiver)
 
     # load model
-    epoch, iteration = 0, 0
-    if args.resume and os.path.isfile(model_path):
-        epoch, iteration = load_model_state(model, model_path)
-        print(f"Loaded model. Resuming from - epoch: {epoch} | iteration: {iteration}")
+    epoch, iteration = load_model_state(model, model_path)
+    print(f"Loaded model. Resuming from - epoch: {epoch} | iteration: {iteration}")
 
     # get the data
     data = pickle.load(open("data/generalize_set.p", "rb"))
 
-    # we dont need distractor samples
-    samples = None
+
+    # check whether we need distractor samples
+    if args.related:
+        samples = get_close_samples(data)
+    else:
+        samples = None
 
     # create dataloader
     dataset = ReferentialDataset(data)
+
     valid_data = DataLoader(
         dataset,
         pin_memory=True,
         batch_sampler=BatchSampler(
-            ReferentialSampler(dataset, samples, related=False, k=args.distractors, shuffle=False),
+            ReferentialSampler(dataset, samples, related=args.related, k=args.distractors, shuffle=False),
             batch_size=args.batch_size,
             drop_last=False,
         ),
@@ -167,3 +177,6 @@ def main(args):
     pickle.dump(
         metrics, open(run_folder + f"/generalize_metrics.pkl", "wb")
     )
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

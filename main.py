@@ -196,9 +196,9 @@ def main(args):
                 print(f"{iteration}/{args.iterations}\r")
                 metrics = evaluate(model, valid_data)
                 save_model_state(model, model_path, epoch, iteration)
-                # pickle.dump(
-                #     metrics, open(run_folder + f"/metrics_at_{iteration}.pkl", "wb")
-                # )
+                pickle.dump(
+                    metrics, open(run_folder + f"/metrics_at_{iteration}.pkl", "wb")
+                )
                 print(f"\t\t acc: {metrics['acc']:.3f}\r", end="")
 
             iteration += 1
