@@ -14,7 +14,6 @@ import itertools
 import numpy as np
 import scipy.stats
 import warnings
-from collections import defaultdict
 from typing import Sequence, Callable, Optional
 
 
@@ -164,8 +163,21 @@ def main(args):
     # make vocab global so other functions can access it as well
     global VOCAB
 
-    # set vocab size
+    #todo check actual vocab size
     VOCAB = 5
+
+
+    # metric_files = glob.glob(f"/*/*")
+    #
+    # for file in tqdm(metric_files):
+    #     m = pickle.load(open(file, "rb"))
+    #     for (space_x, space_y) in combinations(list(DIST.keys()), 2):
+    #         rsa_title = f"RSA:{space_x}/{space_y}"
+    #         #if rsa_title not in m:
+    #         r = rsa(m[space_x], m[space_y], DIST[space_x], DIST[space_y], number_of_samples=args.samples)
+    #         m[rsa_title] = r
+    #
+    #     pickle.dump(m, open(file, "wb"))
 
     # Calculate Cross-Seed RSA for all
     seed_folders = glob.glob(f"*")
@@ -174,33 +186,45 @@ def main(args):
 
     for sp in tqdm(DIST):
 
-        RESULTS[sp] = defaultdict(list)
+        RESULTS[sp] = {}
 
         # compare every seed to all others
-        for s in seed_folders:
+        for s1, s2 in combinations(seed_folders, 2):
 
-            seed = s.split("/")[-1]
+            seed1 = s1.split("/")[-1]
+            seed2 = s2.split("/")[-1]
 
+            RESULTS[sp][seed1 + seed2] = {}
 
             # load messages from specific agent
-            files_s1 = glob.glob(f"{s}/*/*")
+            files_s1 = glob.glob(f"{s1}/*/*")
 
             # loop through all agents
-            for agent1, agent2 in combinations(files_s1,2):
+            for a1 in files_s1:
+
+                # retrieve current agent pair
+                agent = a1.split("_")[2]
+
+                # retrieve the string
+                agent1 = a1.split("/")[1:]
+                sym = '/'
+                agent1 = sym.join(agent1)
 
                 # get second file, they have the same name so just ask agent 1
-                if os.path.isfile(agent1) and os.path.isfile(agent2):
+                a2 = f"{s2}/{agent1}"
+
+                if os.path.isfile(a2):
 
                     # load the different rsa analysis files
-                    m1 = pickle.load(open(agent1, "rb"))
-                    m2 = pickle.load(open(agent2, "rb"))
+                    m1 = pickle.load(open(a1, "rb"))
+                    m2 = pickle.load(open(a2, "rb"))
 
                     # use actual space for to extract data and sp to differentiate message similarity spaces
                     r = rsa(m1, m2, DIST[sp], DIST[sp], number_of_samples=args.samples)
-                    RESULTS[sp][seed].append(r)
+                    RESULTS[sp][seed1 + seed2][agent] = r
 
     # save results
-    pickle.dump(RESULTS, open(f"rsa_analysis.pkl", "wb"))
+    pickle.dump(RESULTS, open(f"cross_rsa_analysis.pkl", "wb"))
 
 
 if __name__ == "__main__":
