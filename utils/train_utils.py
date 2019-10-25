@@ -124,7 +124,7 @@ def get_filename(params: dict) -> str:
         name += "_related"
 
     if params.split:
-        name += "_split"
+        name += "_split_{}".format(params.split)
 
     return name
 

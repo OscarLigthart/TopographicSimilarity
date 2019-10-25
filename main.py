@@ -108,9 +108,10 @@ def parse_arguments(args):
     )
     parser.add_argument(
         "--split",
-        help="Decide whether to use all generated samples or keep some apart for testing generalization",
-        type=bool,
-        default=False
+        help="Decide whether to use all generated samples or keep some apart for testing generalization,"
+             " value decides the amount of cooccurences to be removed",
+        type=int,
+        default=0
     )
 
     args = parser.parse_args(args)

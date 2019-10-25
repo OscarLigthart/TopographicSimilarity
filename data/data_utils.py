@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import pickle
 import os
 from scipy import spatial
 from collections import defaultdict
@@ -38,13 +39,17 @@ class ReferentialDataset(Dataset):
 
 
 class ReferentialSampler(Sampler):
-    def __init__(self, data_source, samples, related: bool = False, k: int = 3, shuffle: bool = False):
+    def __init__(self, data_source, samples, related: bool = False, k: int = 3, shuffle: bool = False,
+                 split: int = 0):
         self.data_source = data_source
 
         # beforehand, for every sample, we gather a list of objects that are fundamentally similar
         # to that sample. We sample randomly from this list to gather distractors --> should be a dictionary
         self.samples = samples
         self.related = related
+
+        # keep track of whether the dataloader should use a subset of targets (after having split the data)
+        self.split = split
 
         self.n = len(data_source)
         self.k = k
@@ -54,7 +59,22 @@ class ReferentialSampler(Sampler):
     def __iter__(self):
         indices = []
 
+        # get the targets
         targets = list(range(self.n))
+
+        # if we want to generalize we have custom targets, we need those indices
+        if self.split:
+            # load the generated split
+            name = 'data/generalize_split_{}.p'.format(self.split)
+            sub_targets = pickle.load(open(name, 'rb'))
+
+            # get the keys of the split, they represent the indices
+            sub_targets = list(sub_targets.keys())
+
+            # replace the targets with the splits
+            targets = sub_targets
+
+        # shuffle the targets if requested
         if self.shuffle:
             random.shuffle(targets)
 

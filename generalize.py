@@ -47,7 +47,7 @@ def parse_arguments(args):
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=32,
+        default=16,
         metavar="N",
         help="input batch size for training (default: 32)",
     )
@@ -96,6 +96,15 @@ def parse_arguments(args):
         type=bool,
         default=False
     )
+    parser.add_argument(
+        "--split",
+        help="Decide whether to use all generated samples or keep some apart for testing generalization,"
+             " value decides the amount of cooccurences to be removed",
+        type=int,
+        default=0
+    )
+
+
 
     args = parser.parse_args(args)
     return args
@@ -104,10 +113,10 @@ def parse_arguments(args):
 def main(args):
     args = parse_arguments(args)
 
-    # set split to true since we can only run generalize code on split data
-    args.split = True
 
-    seed_torch(seed=args.seed)
+    # use the same seed for the data collection
+    seed_torch()
+
     model_name = get_filename(args)
 
     run_folder = "runs/" + model_name + "/" + str(args.seed)
@@ -144,12 +153,16 @@ def main(args):
     model = ReferentialTrainer(sender, receiver)
 
     # load model
-    epoch, iteration = load_model_state(model, model_path)
-    print(f"Loaded model. Resuming from - epoch: {epoch} | iteration: {iteration}")
+    #epoch, iteration = load_model_state(model, model_path)
+    #print(f"Loaded model. Resuming from - epoch: {epoch} | iteration: {iteration}")
 
     # get the data
-    data = pickle.load(open("data/generalize_set.p", "rb"))
+    print("Generating dataset...")
 
+    # create the dataset
+    data = generate_dataset(gen_attr, 0)
+
+    # load regular dataset, replace the targets with the saved split
 
     # check whether we need distractor samples
     if args.related:
@@ -164,11 +177,17 @@ def main(args):
         dataset,
         pin_memory=True,
         batch_sampler=BatchSampler(
-            ReferentialSampler(dataset, samples, related=args.related, k=args.distractors, shuffle=False),
+            ReferentialSampler(dataset, samples, related=args.related, k=args.distractors, shuffle=False,
+                               split=args.split),
             batch_size=args.batch_size,
             drop_last=False,
         ),
     )
+
+    #todo remove
+    for (targets, distractors) in valid_data:
+        print(len(targets))
+    quit()
 
     # evaluate the model
     metrics = evaluate(model, valid_data)

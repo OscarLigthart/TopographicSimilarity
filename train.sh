@@ -1,25 +1,20 @@
 #!/bin/bash
 
 # same data shuffles
-echo "Running hard task"
+echo "Running split task"
 
-for seed in {1..10} 
+for split in {1..3}
   do
-    python main.py --seed $seed --attributes 5 --split True
+    for seed in {1..10} 
+      do
+        python main.py --seed $seed --split $split --log-interval 1000
+      done
+
+    echo "Computing RSAs"
+    python compute_rsas.py --samples 1000 --split $split
   done
 
-echo "Computing RSAs"
-python compute_rsas.py --samples 1000 --attributes 5 --split True
 
-# related with lower attributes
-#echo "Running baseline"
-#for seed in {1..10} 
-#  do
-#    python main.py --seed $seed --attributes 4 --embedding-size 128 --hidden-size 128
-#  done
-
-#echo "Computing RSAs"
-#python compute_rsas.py --samples 1000 --attributes 4 --embedding-size 128 --hidden-size 128
 
 
 
