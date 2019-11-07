@@ -1,15 +1,14 @@
+#!/bin/bash
+
 # same data shuffles
-echo "Running generalization"
+echo "Running split task"
+
 
 for seed in {1..10} 
   do
-    echo "Training model"
-    python main.py --seed $seed --split True --log-interval 9800
-    echo "Generalizing"
-    python generalize.py --seed $seed
+    python main.py --seed $seed --split 2 --attributes 3 --log-interval 1000
   done
 
 echo "Computing RSAs"
-python compute_rsas.py --samples 1000 --attributes 5 --split True
-
+python compute_rsas.py --samples 1000 --split 2 --attributes 3
 

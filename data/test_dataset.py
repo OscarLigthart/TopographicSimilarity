@@ -1,5 +1,7 @@
 from data import *
+import pickle
 
-gen_attr = [3,3,3,3,3]
+x = pickle.load(open('generalize_split_2_attr_5.p', 'rb'))
 
-data = get_referential_dataloader('test',gen_attr, split=True)
+for value in x.values():
+    print(value)

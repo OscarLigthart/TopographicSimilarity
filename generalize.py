@@ -3,6 +3,7 @@ import sys
 import os
 import torch
 import pickle
+import re
 
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import Sampler, BatchSampler
@@ -47,7 +48,7 @@ def parse_arguments(args):
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=16,
+        default=12,
         metavar="N",
         help="input batch size for training (default: 32)",
     )
@@ -103,8 +104,12 @@ def parse_arguments(args):
         type=int,
         default=0
     )
-
-
+    parser.add_argument(
+        "--pair",
+        help="Decide on which attribute pair to split on, (currently integer)",
+        type=int,
+        default=1
+    )
 
     args = parser.parse_args(args)
     return args
@@ -113,19 +118,25 @@ def parse_arguments(args):
 def main(args):
     args = parse_arguments(args)
 
-
     # use the same seed for the data collection
     seed_torch()
 
     model_name = get_filename(args)
 
-    run_folder = "runs/" + model_name + "/" + str(args.seed)
-
     create_folder_if_not_exists("runs")
     create_folder_if_not_exists("runs/" + model_name)
-    create_folder_if_not_exists("runs/" + model_name + "/" + str(args.seed))
+
+    # if args.split:
+    #     run_folder = "runs/" + model_name + "/" + "pair" + str(args.pair) + "/" + str(args.seed)
+    #     create_folder_if_not_exists(run_folder)
+    # else:
+    run_folder = "runs/" + model_name + "/" + str(args.seed)
+    create_folder_if_not_exists(run_folder)
 
     model_path = run_folder + "/model.p"
+
+    # remove related
+    model_path = re.sub('_related', '', model_path)
 
     vocab = AgentVocab(args.vocab_size)
 
@@ -153,8 +164,8 @@ def main(args):
     model = ReferentialTrainer(sender, receiver)
 
     # load model
-    #epoch, iteration = load_model_state(model, model_path)
-    #print(f"Loaded model. Resuming from - epoch: {epoch} | iteration: {iteration}")
+    epoch, iteration = load_model_state(model, model_path)
+    print(f"Loaded model. Resuming from - epoch: {epoch} | iteration: {iteration}")
 
     # get the data
     print("Generating dataset...")
@@ -178,24 +189,22 @@ def main(args):
         pin_memory=True,
         batch_sampler=BatchSampler(
             ReferentialSampler(dataset, samples, related=args.related, k=args.distractors, shuffle=False,
-                               split=args.split),
+                               split=args.split, attr=args.attributes),
             batch_size=args.batch_size,
             drop_last=False,
         ),
     )
 
-    #todo remove
-    for (targets, distractors) in valid_data:
-        print(len(targets))
-    quit()
-
     # evaluate the model
     metrics = evaluate(model, valid_data)
+
+    print(metrics['acc'])
 
     # save the metrics
     pickle.dump(
         metrics, open(run_folder + f"/generalize_metrics.pkl", "wb")
     )
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

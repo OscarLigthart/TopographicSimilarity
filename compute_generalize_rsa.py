@@ -39,7 +39,7 @@ def parse_arguments(args):
         "--samples",
         type=int,
         default=None,
-        help="determine whether data is created on same seed or not"
+        help="determine whether data is created on same seed or not (None equals all samples)"
     )
     parser.add_argument(
         "--max-length",
@@ -160,17 +160,17 @@ def main(args):
     if args.split:
         path += "_split_{}".format(args.split)
 
-    metric_files = glob.glob(f"{path}/*/*.pkl")
+    metric_files = glob.glob(f"{path}/*/generalize_metrics.pkl")
 
-    # for file in tqdm(metric_files):
-    #     m = pickle.load(open(file, "rb"))
-    #     for (space_x, space_y) in combinations(list(DIST.keys()), 2):
-    #         rsa_title = f"RSA:{space_x}/{space_y}"
-    #         #if rsa_title not in m:
-    #         r = rsa(m[space_x], m[space_y], DIST[space_x], DIST[space_y], number_of_samples=args.samples)
-    #         m[rsa_title] = r
-    #
-    #     pickle.dump(m, open(file, "wb"))
+    for file in tqdm(metric_files):
+        m = pickle.load(open(file, "rb"))
+        for (space_x, space_y) in combinations(list(DIST.keys()), 2):
+            rsa_title = f"RSA:{space_x}/{space_y}"
+            #if rsa_title not in m:
+            r = rsa(m[space_x], m[space_y], DIST[space_x], DIST[space_y], number_of_samples=args.samples)
+            m[rsa_title] = r
+
+        pickle.dump(m, open(file, "wb"))
 
     # Calculate Cross-Seed RSA for all
     seed_folders = glob.glob(f"{path}/*")
@@ -180,14 +180,7 @@ def main(args):
     DIST.pop('messages')
 
     DIST["ham_messages"] = on_hot_hamming
-
-    #DIST["lev_messages"] = levenshtein_ratio_and_distance
-
-    # todo remove this
-    DIST.pop('h_sender')
-    DIST.pop('h_rnn_sender')
-    DIST.pop('h_receiver')
-    DIST.pop('h_rnn_receiver')
+    DIST["lev_messages"] = levenshtein_ratio_and_distance
 
     RESULTS = {}
 
@@ -211,24 +204,13 @@ def main(args):
             RESULTS[sp][seed1 + seed2] = {}
 
             # load all metric files
-            files_s1 = glob.glob(f"{s1}/*.pkl")
+            files_s1 = glob.glob(f"{s1}/generalize_metrics.pkl")
 
             # get the first file
             for f1 in files_s1:
 
-                # parse the path to get the second file
-                metric_file = f1.split("/")[-1]
-
-                if 'generalize_metrics.pkl' in f1:
-                    iteration = 'generalize'
-                else:
-                    iteration = int(metric_file.split("_")[-1].split(".")[0])
-
-                if type(iteration) == int and iteration < 10000:
-                    continue
-
                 # get second file
-                f2 = f"{s2}/{metric_file}"
+                f2 = f"{s2}/generalize_metrics.pkl"
 
                 if os.path.isfile(f2):
 
@@ -238,10 +220,10 @@ def main(args):
 
                     # use actual space for to extract data and sp to differentiate message similarity spaces
                     r = rsa(m1[space], m2[space], DIST[sp], DIST[sp], number_of_samples=args.samples)
-                    RESULTS[sp][seed1 + seed2][iteration] = r
+                    RESULTS[sp][seed1 + seed2] = r
 
     # save results
-    pickle.dump(RESULTS, open(f"{path}/rsa_analysis.pkl", "wb"))
+    pickle.dump(RESULTS, open(f"{path}/generalize_rsa_analysis.pkl", "wb"))
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ def parse_arguments(args):
     parser.add_argument(
         "--iterations",
         type=int,
-        default=10000,
+        default=10001,
         metavar="N",
         help="number of batch iterations to train (default: 10k)",
     )
@@ -124,11 +124,18 @@ def main(args):
     seed_torch(seed=args.seed)
     model_name = get_filename(args)
 
-    run_folder = "runs/" + model_name + "/" + str(args.seed)
-
     create_folder_if_not_exists("runs")
     create_folder_if_not_exists("runs/" + model_name)
-    create_folder_if_not_exists("runs/" + model_name + "/" + str(args.seed))
+
+    # # if we split, we might want to split on different attribute pairs, hence we
+    # # check whether the user specified a certain pair (if running split)
+    # if args.split:
+    #     run_folder = "runs/" + model_name + "/" + "pair" + str(args.pair) + "/" + str(args.seed)
+    #     create_folder_if_not_exists(run_folder)
+    # else:
+
+    run_folder = "runs/" + model_name + "/" + str(args.seed)
+    create_folder_if_not_exists(run_folder)
 
     model_path = run_folder + "/model.p"
 

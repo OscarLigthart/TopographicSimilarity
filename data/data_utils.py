@@ -40,7 +40,7 @@ class ReferentialDataset(Dataset):
 
 class ReferentialSampler(Sampler):
     def __init__(self, data_source, samples, related: bool = False, k: int = 3, shuffle: bool = False,
-                 split: int = 0):
+                 split: int = 0, attr: int = 0, pair: int = 1):
         self.data_source = data_source
 
         # beforehand, for every sample, we gather a list of objects that are fundamentally similar
@@ -50,6 +50,7 @@ class ReferentialSampler(Sampler):
 
         # keep track of whether the dataloader should use a subset of targets (after having split the data)
         self.split = split
+        self.attr = attr
 
         self.n = len(data_source)
         self.k = k
@@ -65,7 +66,7 @@ class ReferentialSampler(Sampler):
         # if we want to generalize we have custom targets, we need those indices
         if self.split:
             # load the generated split
-            name = 'data/generalize_split_{}.p'.format(self.split)
+            name = 'data/generalize_split_{}_attr_{}.p'.format(self.split, self.attr)
             sub_targets = pickle.load(open(name, 'rb'))
 
             # get the keys of the split, they represent the indices
@@ -125,8 +126,8 @@ def get_attributes(nr_attributes):
     # first calculate the amount of samples created
     total_attr = np.prod(gen_attr)
 
-    # make sure the dataset holds at least 150 samples, by adding dimensions to attributes
-    while total_attr < 150:  # and all(i >= 2 for i in gen_attr):
+    # make sure the dataset holds at least 243 samples (like baseline), by adding dimensions to attributes
+    while total_attr < 243:  # and all(i >= 2 for i in gen_attr):
         index = np.argmin(gen_attr)
         gen_attr[index] += 1
         total_attr = np.prod(gen_attr)
@@ -178,7 +179,7 @@ def get_close_samples(dataset, threshold=0.2):
 
 def get_referential_dataloader(
     file_name: str, gen_attr: list, batch_size: int = 32, shuffle: bool = False, k: int = 3,
-        split=False, related=False):
+        split=0, related=False, pair=0):
     """
     Splits a pytorch dataset into different sizes of dataloaders
     Args:
@@ -200,7 +201,7 @@ def get_referential_dataloader(
     else:
         print("Generating dataset...")
         # create the attribute vector here
-        data = generate_dataset(gen_attr, split)
+        data = generate_dataset(gen_attr, split, pair=pair)
 
         # save locally
         # np.save(file_path, data)

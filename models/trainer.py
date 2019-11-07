@@ -81,5 +81,5 @@ class ReferentialTrainer(nn.Module):
                 h_s.detach(),
                 h_rnn_s.detach(),
                 h_r.detach(),
-                h_rnn_r.detach(),
+                h_rnn_r.detach()
             )

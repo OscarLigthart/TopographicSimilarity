@@ -2,6 +2,7 @@ import itertools
 import numpy as np
 from typing import Optional
 import pickle
+from itertools import combinations
 
 # 3 colors, 3 shapes, 2 sizes, 3 position y, 3 position x
 SHAPES_ATTRIBUTES = [3, 3, 2, 3, 3]
@@ -16,7 +17,7 @@ def one_hot(a, n_cols: Optional[int] = None):
     return out
 
 
-def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES, split: int = 0):
+def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES, split: int = 0, pair: int = 1):
     """
     Generates a dataset based on the vector of attributes passed
     """
@@ -42,46 +43,72 @@ def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES, split: int = 0
 
     # optionally split dataset
     if split:
-        one_hot_derivations = split_data(split, one_hot_derivations)
+        # todo, manually adjusts the amount of attribute combinations you would like to remove
+        one_hot_derivations = split_data(split, one_hot_derivations, pair)
 
     return one_hot_derivations
 
 
-def split_data(split, one_hot_derivations):
+def split_data(split, one_hot_derivations, pair=1):
     """
     This function splits data based on an amount of co-occurring attributes/features
     The split samples are saved in a file which can be loaded for the generalization
     :return: dataset without split samples
     """
 
+    # todo make this function be able to detect previously made splits, or make it
+    # todo susceptible to choosing which attributes you would like to split
+    # todo let's start with 20 splits
+
     # take a number of co-occurrences
     k = split
 
-    # remove a random coocccurring sample (for instance, "red square")
-    # we remove all instances of [1 0 0 1 0 0]
-    # needs to be variable across different attribute sizes
-    # so take the first attribute and find the first k amount of ones
-    sample = one_hot_derivations[0]
-    attr = np.where(sample == 1)[0]
-    occurrences = attr[:k]
+    # we need to keep track of the filtered attributes
+    filtered_attr = []
+
+    # start by using the first target (get by index)
+    index = 0
 
     # initialize empty list in which we store the samples for the split set
     samples = {}
 
-    # find all elements where the occurrences are the same
+    # extract all attribute pairs
+    while index < len(one_hot_derivations):
+
+        # remove a co-occurring sample (for instance, "red square")
+        # we remove all instances of [1 0 0 1 0 0]
+        # so take the first attribute and find the first k amount of ones
+        sample = one_hot_derivations[index]
+        attr = np.where(sample == 1)[0]
+
+        occurrences = attr[:k]
+
+        # check if we have not filtered the same combination of attributes before
+        if tuple(occurrences) not in filtered_attr:
+            filtered_attr.append(tuple(occurrences))
+            break
+
+        # next time we take the next target
+        index += 1
+
+    # find all elements where the occurrences are the sa    me
     for i, s in enumerate(one_hot_derivations):
         attr = np.where(s == 1)[0]
+
         occ = attr[:k]
+
+        # check if sample holds the attributes
         if np.array_equal(occurrences, occ):
 
             # add sample to split set, keep index as well
             samples[i] = s
 
-            # delete sample from dataset
-            one_hot_derivations = [j for j in one_hot_derivations if not np.array_equal(j, s)]
+    # delete sample from dataset
+    for s in samples.values():
+        one_hot_derivations = [j for j in one_hot_derivations if not np.array_equal(j, s)]
 
     # get name for samples split
-    name = 'data/generalize_split_{}.p'.format(split)
+    name = 'data/generalize_split_{}_attr_{}.p'.format(split, sum(one_hot_derivations[0]))
 
     # save selected samples
     pickle.dump(samples, open(name, "wb"))
