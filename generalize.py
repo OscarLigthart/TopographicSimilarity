@@ -126,12 +126,12 @@ def main(args):
     create_folder_if_not_exists("runs")
     create_folder_if_not_exists("runs/" + model_name)
 
-    # if args.split:
-    #     run_folder = "runs/" + model_name + "/" + "pair" + str(args.pair) + "/" + str(args.seed)
-    #     create_folder_if_not_exists(run_folder)
-    # else:
-    run_folder = "runs/" + model_name + "/" + str(args.seed)
-    create_folder_if_not_exists(run_folder)
+    if args.split:
+        run_folder = "runs/" + model_name + "/" + "pair" + str(args.pair) + "/" + str(args.seed)
+        create_folder_if_not_exists(run_folder)
+    else:
+        run_folder = "runs/" + model_name + "/" + str(args.seed)
+        create_folder_if_not_exists(run_folder)
 
     model_path = run_folder + "/model.p"
 
@@ -189,7 +189,7 @@ def main(args):
         pin_memory=True,
         batch_sampler=BatchSampler(
             ReferentialSampler(dataset, samples, related=args.related, k=args.distractors, shuffle=False,
-                               split=args.split, attr=args.attributes),
+                               split=args.split, attr=args.attributes, pair=args.pair),
             batch_size=args.batch_size,
             drop_last=False,
         ),

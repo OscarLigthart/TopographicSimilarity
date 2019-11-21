@@ -72,9 +72,9 @@ def parse_arguments(args):
     parser.add_argument(
         "--log-interval",
         type=int,
-        default=200,
+        default=1000,
         metavar="N",
-        help="number of iterations between logs (default: 200)",
+        help="number of iterations between logs (default: 1000)",
     )
     parser.add_argument(
         "--resume",
@@ -85,7 +85,7 @@ def parse_arguments(args):
     parser.add_argument(
         "--same-data",
         help="decide whether same seed should be used to shuffle data",
-        type=bool,
+        action="store_true",
         default=False,
     )
     parser.add_argument(
@@ -103,7 +103,7 @@ def parse_arguments(args):
     parser.add_argument(
         "--related",
         help="Decide whether to use distractors that are semantically similar to the targets",
-        type=bool,
+        action="store_true",
         default=False
     )
     parser.add_argument(
@@ -112,6 +112,27 @@ def parse_arguments(args):
              " value decides the amount of cooccurences to be removed",
         type=int,
         default=0
+    )
+    parser.add_argument(
+        "--pair",
+        help="Decide on which attribute pair to split on, (currently integer)",
+        type=int,
+        default=1
+    )
+    parser.add_argument(
+        "--freeze-sender",
+        help="Freeze the sender in the setup, so the language stays constant",
+        action="store_true",
+        default=False
+    )
+    parser.add_argument(
+        "--freeze-receiver",
+        help="Freeze the receiver in the setup, so the language interpretation remains constant",
+        action="store_true",
+        default=False
+    )
+    parser.add_argument(
+        "--freeze-seed", type=int, default=2, help="random seed (default: 1)"
     )
 
     args = parser.parse_args(args)
@@ -127,13 +148,12 @@ def main(args):
     create_folder_if_not_exists("runs")
     create_folder_if_not_exists("runs/" + model_name)
 
-    # # if we split, we might want to split on different attribute pairs, hence we
-    # # check whether the user specified a certain pair (if running split)
+    # if we split, we might want to split on different attribute pairs, hence we
+    # check whether the user specified a certain pair (if running split)
     # if args.split:
     #     run_folder = "runs/" + model_name + "/" + "pair" + str(args.pair) + "/" + str(args.seed)
     #     create_folder_if_not_exists(run_folder)
     # else:
-
     run_folder = "runs/" + model_name + "/" + str(args.seed)
     create_folder_if_not_exists(run_folder)
 
@@ -176,11 +196,28 @@ def main(args):
     pytorch_total_params = sum(p.numel() for p in model.parameters())
     print(f"Total number of parameters: {pytorch_total_params}")
 
+    ##################
+    # MODEL FREEZING #
+    ############################################################
+
+    # freeze model here
+    if args.freeze_sender:
+        model, epoch, iteration, model_path = freeze_sender(args, model, run_folder)
+
+    if args.freeze_receiver:
+        model, epoch, iteration, model_path = freeze_receiver(args, model, run_folder)
+
+    ############################################################
+
     # send model to device
     model.to(device)
 
     # set optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+
+    ###################
+    # DATA SET LOADER #
+    #############################################################
 
     # set dataseed and dataset here if you wish to use same data
     if args.same_data:
@@ -189,25 +226,48 @@ def main(args):
     # initialize dataset
     train_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors,
                                             batch_size=args.batch_size, shuffle=True,
-                                            related=args.related, split=args.split)
+                                            related=args.related, split=args.split, pair=args.pair)
     valid_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors,
                                             batch_size=args.batch_size, related=args.related,
-                                            split=args.split)
+                                            split=args.split, pair=args.pair)
 
-    # Train
+    #############################################################
+
+    ##################
+    # TRAIN          #
+    #############################################################
+
     while iteration < args.iterations:
         for (targets, distractors) in train_data:
 
+            # normal training
             train_one_batch(model, optimizer, targets, distractors)
 
+            # freeze training
             if iteration % args.log_interval == 0:
                 print(f"{iteration}/{args.iterations}\r")
                 metrics = evaluate(model, valid_data)
                 save_model_state(model, model_path, epoch, iteration)
-                pickle.dump(
-                    metrics, open(run_folder + f"/metrics_at_{iteration}.pkl", "wb")
-                )
+
+                if args.freeze_sender:
+                    # freeze dump
+                    pickle.dump(
+                        metrics, open(run_folder + '/freezes_sender/' + str(args.freeze_seed) + f"/metrics_at_{iteration}.pkl", "wb")
+                    )
+                elif args.freeze_receiver:
+                    # freeze dump
+                    pickle.dump(
+                        metrics, open(run_folder + '/freezes_receiver/' + str(args.freeze_seed) + f"/metrics_at_{iteration}.pkl", "wb")
+                    )
+                else:
+                    # normal dump
+                    pickle.dump(
+                        metrics, open(run_folder + f"/metrics_at_{iteration}.pkl", "wb")
+                    )
+
                 print(f"\t\t acc: {metrics['acc']:.3f}\r", end="")
+
+            #train_one_batch(model, optimizer, targets, distractors)
 
             iteration += 1
             if iteration >= args.iterations:

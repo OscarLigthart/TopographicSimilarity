@@ -25,7 +25,7 @@ def parse_arguments(args):
     )
     parser.add_argument(
         "--same-data",
-        type=bool,
+        action="store_true",
         default=False,
         help="determine whether data is created on same seed or not"
     )
@@ -64,7 +64,7 @@ def parse_arguments(args):
     parser.add_argument(
         "--related",
         help="Decide whether to use distractors that are semantically similar to the targets",
-        type=bool,
+        action="store_true",
         default=False
     )
     parser.add_argument(
@@ -72,6 +72,21 @@ def parse_arguments(args):
         help="Decide whether to use all generated samples or keep some apart for testing generalization",
         type=int,
         default=0
+    )
+    parser.add_argument(
+        "--freeze-sender",
+        help="Freeze the sender in the setup, so the language stays constant",
+        action="store_true",
+        default=False
+    )
+    parser.add_argument(
+        "--freeze-receiver",
+        help="Freeze the receiver in the setup, so the interpretation stays constant",
+        action="store_true",
+        default=False
+    )
+    parser.add_argument(
+        "--freeze-seed", type=int, default=2, help="random seed (default: 1)"
     )
 
     args = parser.parse_args(args)
@@ -160,8 +175,17 @@ def main(args):
     if args.split:
         path += "_split_{}".format(args.split)
 
-    metric_files = glob.glob(f"{path}/*/*.pkl")
+    # check if sender is frozen
+    if args.freeze_sender:
+        path += "/" + str(args.freeze_seed) + "/freezes_sender"
 
+    # check if receiver is frozen
+    if args.freeze_receiver:
+        path += "/" + str(args.freeze_seed) + "/freezes_receiver"
+
+    # # within seed RSA for all
+    # metric_files = glob.glob(f"{path}/*/*.pkl")
+    #
     # for file in tqdm(metric_files):
     #     m = pickle.load(open(file, "rb"))
     #     for (space_x, space_y) in combinations(list(DIST.keys()), 2):
@@ -180,14 +204,8 @@ def main(args):
     DIST.pop('messages')
 
     DIST["ham_messages"] = on_hot_hamming
+    DIST["lev_messages"] = levenshtein_ratio_and_distance
 
-    #DIST["lev_messages"] = levenshtein_ratio_and_distance
-
-    # todo remove this
-    DIST.pop('h_sender')
-    DIST.pop('h_rnn_sender')
-    DIST.pop('h_receiver')
-    DIST.pop('h_rnn_receiver')
 
     RESULTS = {}
 
@@ -223,9 +241,6 @@ def main(args):
                     iteration = 'generalize'
                 else:
                     iteration = int(metric_file.split("_")[-1].split(".")[0])
-
-                if type(iteration) == int and iteration < 10000:
-                    continue
 
                 # get second file
                 f2 = f"{s2}/{metric_file}"
