@@ -51,6 +51,7 @@ class ReferentialSampler(Sampler):
         # keep track of whether the dataloader should use a subset of targets (after having split the data)
         self.split = split
         self.attr = attr
+        self.pair = pair
 
         self.n = len(data_source)
         self.k = k
@@ -66,7 +67,7 @@ class ReferentialSampler(Sampler):
         # if we want to generalize we have custom targets, we need those indices
         if self.split:
             # load the generated split
-            name = 'data/generalize_split_{}_attr_{}.p'.format(self.split, self.attr)
+            name = 'data/splits/split_{}_attr_{}_pair_{}.p'.format(self.split, self.attr, self.pair)
             sub_targets = pickle.load(open(name, 'rb'))
 
             # get the keys of the split, they represent the indices

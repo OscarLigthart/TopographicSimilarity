@@ -56,10 +56,6 @@ def split_data(split, one_hot_derivations, pair=1):
     :return: dataset without split samples
     """
 
-    # todo make this function be able to detect previously made splits, or make it
-    # todo susceptible to choosing which attributes you would like to split
-    # todo let's start with 20 splits
-
     # take a number of co-occurrences
     k = split
 
@@ -81,34 +77,40 @@ def split_data(split, one_hot_derivations, pair=1):
         sample = one_hot_derivations[index]
         attr = np.where(sample == 1)[0]
 
-        occurrences = attr[:k]
+        # find the co occurring samples in the dataset
+        for j in range(sum(one_hot_derivations[0]) - k):
+            occurrences = attr[j:j + k]
 
-        # check if we have not filtered the same combination of attributes before
-        if tuple(occurrences) not in filtered_attr:
-            filtered_attr.append(tuple(occurrences))
-            break
+            # check if we have not filtered the same combination of attributes before
+            if tuple(occurrences) not in filtered_attr:
+                filtered_attr.append(tuple(occurrences))
 
         # next time we take the next target
         index += 1
 
-    # find all elements where the occurrences are the sa    me
+    # get the requested pair
+    occurrences = np.array(filtered_attr[pair-1])
+
+    # find all elements where the occurrences are the same
     for i, s in enumerate(one_hot_derivations):
         attr = np.where(s == 1)[0]
 
-        occ = attr[:k]
+        # find the co occurring samples in the dataset
+        for j in range(sum(one_hot_derivations[0]) - k):
+            occ = attr[j:j + k]
 
-        # check if sample holds the attributes
-        if np.array_equal(occurrences, occ):
+            # check if sample holds the attributes
+            if np.array_equal(occurrences, occ):
 
-            # add sample to split set, keep index as well
-            samples[i] = s
+                # add sample to split set, keep index as well
+                samples[i] = s
 
     # delete sample from dataset
     for s in samples.values():
         one_hot_derivations = [j for j in one_hot_derivations if not np.array_equal(j, s)]
 
     # get name for samples split
-    name = 'data/generalize_split_{}_attr_{}.p'.format(split, sum(one_hot_derivations[0]))
+    name = 'data/splits/split_{}_attr_{}_pair_{}.p'.format(split, sum(one_hot_derivations[0]), pair)
 
     # save selected samples
     pickle.dump(samples, open(name, "wb"))
