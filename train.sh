@@ -14,17 +14,17 @@ echo "Running split task"
 #    python compute_rsas.py --samples 1000 --split $split
 #  done
 
-for seed in {11..20} 
-  do
-    python main.py --seed $seed --split 2 --log-interval 1000 --same-data
-    python generalize.py --split 2 --seed $seed --same-data
-  done
+#for seed in {21..40} 
+#  do
+#    python main.py --seed $seed --split 2 --log-interval 1000 --same-data
+#    python generalize.py --split 2 --seed $seed --same-data
+#  done
 
 
 
 echo "Computing RSAs"
 python compute_rsas.py --split 2 --same-data --samples 1000
-python compute_generalize_rsa.py --split 2 --same-data --samples 1000
+#python compute_generalize_rsa.py --split 2 --same-data --samples 1000
 
 
 

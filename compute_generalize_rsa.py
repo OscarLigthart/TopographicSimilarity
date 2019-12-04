@@ -25,7 +25,7 @@ def parse_arguments(args):
     )
     parser.add_argument(
         "--same-data",
-        type=bool,
+        action="store_true",
         default=False,
         help="determine whether data is created on same seed or not"
     )

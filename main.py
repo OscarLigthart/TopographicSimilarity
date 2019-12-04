@@ -68,7 +68,6 @@ def parse_arguments(args):
         metavar="N",
         help="Adam learning rate (default: 1e-3)",
     )
-
     parser.add_argument(
         "--log-interval",
         type=int,
@@ -190,7 +189,7 @@ def main(args):
 
     # Print info
     print("----------------------------------------")
-    print(f"Model name: {model_name} \n|V|: {args.vocab_size}\nL: { args.max_length}")
+    print(f"Model name: {model_name} \n|V|: {args.vocab_size}\nL: { args.max_length}\nSeed: {args.seed}")
     print(model.sender)
     print(model.receiver)
     pytorch_total_params = sum(p.numel() for p in model.parameters())
@@ -266,8 +265,6 @@ def main(args):
                     )
 
                 print(f"\t\t acc: {metrics['acc']:.3f}\r", end="")
-
-            #train_one_batch(model, optimizer, targets, distractors)
 
             iteration += 1
             if iteration >= args.iterations:

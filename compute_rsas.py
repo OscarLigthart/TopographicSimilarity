@@ -62,6 +62,13 @@ def parse_arguments(args):
         default=3
     )
     parser.add_argument(
+        "--hidden-size",
+        type=int,
+        default=64,
+        metavar="N",
+        help="hidden size for hidden layer (default: 64)",
+    )
+    parser.add_argument(
         "--related",
         help="Decide whether to use distractors that are semantically similar to the targets",
         action="store_true",
@@ -114,7 +121,7 @@ def levenshtein_ratio_and_distance(s, t):
     # Initialize matrix of zeros
     rows = len(s)+1
     cols = len(t)+1
-    distance = np.zeros((rows,cols),dtype = int)
+    distance = np.zeros((rows, cols), dtype=int)
 
     # Populate matrix of zeros with the indeces of each character of both strings
     for i in range(1, rows):
@@ -165,6 +172,8 @@ def main(args):
 
     # determine path to calculate Cross-Seed RSA on
     path = "runs/lstm_max_len_{}_vocab_{}".format(args.max_length, args.vocab_size)
+    #path = "runs/lstm_h_{}_max_len_{}_vocab_{}".format(args.hidden_size, args.max_length, args.vocab_size)
+
 
     # get correct path name, based on parameters
     if args.same_data:
@@ -214,6 +223,7 @@ def main(args):
         # use key messages for hamming and lev distance, since data is saved in that way
         if sp == "ham_messages" or sp == "lev_messages":
             space = "messages"
+
         # use regular keys for other datapoints
         else:
             space = sp
@@ -226,7 +236,7 @@ def main(args):
             seed1 = s1.split("/")[-1]
             seed2 = s2.split("/")[-1]
 
-            RESULTS[sp][seed1 + seed2] = {}
+            RESULTS[sp][seed1 + '-' + seed2] = {}
 
             # load all metric files
             files_s1 = glob.glob(f"{s1}/*.pkl")
@@ -253,7 +263,7 @@ def main(args):
 
                     # use actual space for to extract data and sp to differentiate message similarity spaces
                     r = rsa(m1[space], m2[space], DIST[sp], DIST[sp], number_of_samples=args.samples)
-                    RESULTS[sp][seed1 + seed2][iteration] = r
+                    RESULTS[sp][seed1 + '-' + seed2][iteration] = r
 
     # save results
     pickle.dump(RESULTS, open(f"{path}/rsa_analysis.pkl", "wb"))

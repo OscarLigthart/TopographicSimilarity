@@ -76,7 +76,7 @@ def parse_arguments(args):
     parser.add_argument(
         "--same-data",
         help="decide whether same seed should be used to shuffle data",
-        type=bool,
+        action="store_true",
         default=False,
     )
     parser.add_argument(
@@ -126,12 +126,12 @@ def main(args):
     create_folder_if_not_exists("runs")
     create_folder_if_not_exists("runs/" + model_name)
 
-    if args.split:
-        run_folder = "runs/" + model_name + "/" + "pair" + str(args.pair) + "/" + str(args.seed)
-        create_folder_if_not_exists(run_folder)
-    else:
-        run_folder = "runs/" + model_name + "/" + str(args.seed)
-        create_folder_if_not_exists(run_folder)
+    # if args.split:
+    #     run_folder = "runs/" + model_name + "/" + "pair" + str(args.pair) + "/" + str(args.seed)
+    #     create_folder_if_not_exists(run_folder)
+    # else:
+    run_folder = "runs/" + model_name + "/" + str(args.seed)
+    create_folder_if_not_exists(run_folder)
 
     model_path = run_folder + "/model.p"
 

@@ -137,3 +137,65 @@ def unique_messages(path, metrics, show_results=True):
 
     return result
 
+
+def unique_tokens(path, iterations, show_results=True):
+    """
+    This function counts the amount of unique messages for a certain experiment
+    :param path: the path to the files that need to be checked
+    :param iterations: iterations at which to show results
+    :param show_results: boolean to decide whether or not to print results
+    :return: nr of unique messages
+    """
+
+    # load the data
+    seed_folders = glob.glob(f"{path}/*")
+
+    result = {}
+    result_tokens = {}
+    # run through all seed
+    for s in seed_folders:
+
+        # get seed index
+        seed = s.split("/")[-1]
+
+        if seed == 'rsa_analysis.pkl':
+            continue
+
+        result[seed] = {}
+
+        all_tokens =set()
+
+        # run through selected metric iterations
+        for it in iterations:
+            # combine file path
+            file_path = s + "/metrics_at_{}.pkl".format(it)
+
+            # load files
+            m1 = pickle.load(open(file_path, "rb"))
+
+            # loop through messages to gather unique tokens
+            tokens = set()
+            for message in m1['messages']:
+                for token in message:
+                    tokens.add(token)
+                    all_tokens.add(token)
+
+            # append result
+            result[seed][it] = len(tokens)
+
+        result_tokens[seed] = all_tokens
+
+    if show_results:
+        # show the amount of unique message
+        for seed, metric in result.items():
+            print('Showing results for seed ' + str(seed))
+            print('Iteration: \t | \t Unique tokens:')
+            for i, count in metric.items():
+                if i < 1000:
+                    print('\t' + str(i) + '\t\t\t\t\t' + str(count))
+                else:
+                    print('\t' + str(i) + '\t\t\t\t' + str(count))
+
+            print()
+
+    return result

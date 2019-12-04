@@ -110,7 +110,7 @@ def get_filename(params: dict) -> str:
     Generates a filename from baseline params (see baseline.py)
     """
     name = "lstm"  # params.model_type
-    #name += "_h_{}".format(params.hidden_size)
+    name += "_h_{}".format(params.hidden_size)
     #name += "_lr_{}".format(params.lr)
     name += "_max_len_{}".format(params.max_length)
     name += "_vocab_{}".format(params.vocab_size)
