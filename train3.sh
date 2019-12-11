@@ -1,24 +1,14 @@
 #!/bin/bash
 
 # same data shuffles
-echo "Running receiver freeze task"
+echo "Running data split task"
 
-
-echo "Training model"
-
-# train new model
-python main.py --seed 4 --split 2 --log-interval 1000
-
-echo "Freezing receiver and retraining sender..."
-
-# freeze sender models and retrain receiver
 for seed in {1..10} 
   do
-    python main.py --seed 4 --resume --freeze-sender --freeze-seed $seed --split 2 --log-interval 1000
-    #python main.py --seed 4 --resume --freeze-receiver --freeze-seed $seed --split 2 --log-interval 1000
+    python main.py --seed $seed --split 2 --vocab-size 3 --max-length 4
+    python generalize.py --seed $seed --split 2 --vocab-size 3 --max-length 4
   done
 
 
 echo "Computing RSAs"
-python compute_rsas.py --samples 2500 --split 2 --freeze-sender --freeze-seed 4
-#python compute_rsas.py --samples 2500 --split 2 --freeze-receiver --freeze-seed $globseed
+python compute_rsas.py --samples 1000 --split 2 --vocab-size 3 --max-length 4
