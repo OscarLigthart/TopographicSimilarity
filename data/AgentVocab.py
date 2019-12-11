@@ -55,8 +55,6 @@ class AgentVocab(object):
             self.itos.append(str(i))
             self.stoi[str(i)] = i
 
-        # todo ***DONE*** #1 add the PAD here, after the eos token so the agent has no access to it
-        # todo instead of the pad as 0
         # add sos and eos
         self.itos.append(self.EOS_TOKEN)
         self.stoi[self.EOS_TOKEN] = len(self.itos) - 1

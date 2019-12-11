@@ -140,10 +140,19 @@ def parse_arguments(args):
 
 
 def main(args):
-    args = parse_arguments(args)
-    seed_torch(seed=args.seed)
-    model_name = get_filename(args)
+    """
+    Runs an experiment
+    :param: args: experiment settings
+    """
 
+    # get settings
+    args = parse_arguments(args)
+
+    # set seed straight away
+    seed_torch(seed=args.seed)
+
+    # create datafile structure
+    model_name = get_filename(args)
     create_folder_if_not_exists("runs")
     create_folder_if_not_exists("runs/" + model_name)
 
@@ -153,15 +162,20 @@ def main(args):
     #     run_folder = "runs/" + model_name + "/" + "pair" + str(args.pair) + "/" + str(args.seed)
     #     create_folder_if_not_exists(run_folder)
     # else:
+
     run_folder = "runs/" + model_name + "/" + str(args.seed)
     create_folder_if_not_exists(run_folder)
-
     model_path = run_folder + "/model.p"
 
+    # determine the vocabulary size
     vocab = AgentVocab(args.vocab_size)
 
     # get objects attribute early, to determine input size of models
     gen_attr = get_attributes(args.attributes)
+
+    ####################
+    # INITIALIZE MODEL #
+    ############################################################
 
     # get sender and receiver models
     sender = Sender(
@@ -182,6 +196,9 @@ def main(args):
 
     model = ReferentialTrainer(sender, receiver)
 
+    ############################################################
+
+    # check if we can resume from previous training
     epoch, iteration = 0, 0
     if args.resume and os.path.isfile(model_path):
         epoch, iteration = load_model_state(model, model_path)

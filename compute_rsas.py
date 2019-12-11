@@ -174,7 +174,6 @@ def main(args):
     path = "runs/lstm_max_len_{}_vocab_{}".format(args.max_length, args.vocab_size)
     #path = "runs/lstm_h_{}_max_len_{}_vocab_{}".format(args.hidden_size, args.max_length, args.vocab_size)
 
-
     # get correct path name, based on parameters
     if args.same_data:
         path += "_same_data"
@@ -193,17 +192,17 @@ def main(args):
         path += "/" + str(args.freeze_seed) + "/freezes_receiver"
 
     # # within seed RSA for all
-    # metric_files = glob.glob(f"{path}/*/*.pkl")
-    #
-    # for file in tqdm(metric_files):
-    #     m = pickle.load(open(file, "rb"))
-    #     for (space_x, space_y) in combinations(list(DIST.keys()), 2):
-    #         rsa_title = f"RSA:{space_x}/{space_y}"
-    #         #if rsa_title not in m:
-    #         r = rsa(m[space_x], m[space_y], DIST[space_x], DIST[space_y], number_of_samples=args.samples)
-    #         m[rsa_title] = r
-    #
-    #     pickle.dump(m, open(file, "wb"))
+    metric_files = glob.glob(f"{path}/*/*.pkl")
+
+    for file in tqdm(metric_files):
+        m = pickle.load(open(file, "rb"))
+        for (space_x, space_y) in combinations(list(DIST.keys()), 2):
+            rsa_title = f"RSA:{space_x}/{space_y}"
+            #if rsa_title not in m:
+            r = rsa(m[space_x], m[space_y], DIST[space_x], DIST[space_y], number_of_samples=args.samples)
+            m[rsa_title] = r
+
+        pickle.dump(m, open(file, "wb"))
 
     # Calculate Cross-Seed RSA for all
     seed_folders = glob.glob(f"{path}/*")

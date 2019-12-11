@@ -7,6 +7,45 @@ import glob
 from collections import defaultdict
 from analysis import *
 
+def load_metrics(path):
+    """
+        This function loads metrics
+    """
+
+    # load the data
+    seed_folders = glob.glob(f"{path}/*")
+
+    # save results
+    generalize_result = {}
+    train_result = {}
+
+    # run through all seed
+    for s in seed_folders:
+
+        # get seed index
+        seed = s.split("/")[-1]
+
+        # make sure to ignore the rsa analysis for now
+        if seed == 'rsa_analysis.pkl':
+            continue
+
+        # get all metric files
+        metric_files = glob.glob(s + "/*.pkl")
+
+        for file in metric_files:
+
+            # load files
+            m1 = pickle.load(open(file, "rb"))
+
+            # check if file is generalize or train metric
+            if file.find('generalize') == -1:
+                if file.find('10000') != -1:
+                    train_result[seed] = m1
+            else:
+                generalize_result[seed] = m1
+
+    return train_result, generalize_result
+
 
 def show_messages(path, metrics, show_results=True):
     """
