@@ -30,9 +30,9 @@ class ReferentialDataset(Dataset):
         for d_idx in distractors_idxs:
             distractors.append(self.data[d_idx])
 
-        target_img = self.data[target_idx]
+        target = self.data[target_idx]
 
-        return (target_img, distractors)
+        return (target, distractors)
 
     def __len__(self):
         return self.data.shape[0]
@@ -51,6 +51,7 @@ class ReferentialSampler(Sampler):
         # keep track of whether the dataloader should use a subset of targets (after having split the data)
         self.split = split
         self.attr = attr
+        self.nr_attr = len(attr)
         self.pair = pair
 
         self.n = len(data_source)
@@ -67,7 +68,7 @@ class ReferentialSampler(Sampler):
         # if we want to generalize we have custom targets, we need those indices
         if self.split:
             # load the generated split
-            name = 'data/splits/split_{}_attr_{}_pair_{}.p'.format(self.split, self.attr, self.pair)
+            name = 'data/splits/split_{}_attr_{}_pair_{}.p'.format(self.split, self.nr_attr, self.pair)
             sub_targets = pickle.load(open(name, 'rb'))
 
             # get the keys of the split, they represent the indices
@@ -75,6 +76,8 @@ class ReferentialSampler(Sampler):
 
             # replace the targets with the splits
             targets = sub_targets
+
+            print(targets)
 
         # shuffle the targets if requested
         if self.shuffle:
@@ -85,16 +88,31 @@ class ReferentialSampler(Sampler):
             # if we only want to sample related targets we use the enclosed dictionary holding these
             if self.related:
 
-                # target in first position with k random distractors following
-                indices.append(
-                    np.array(
-                        [t]
-                        + random.sample(
-                            self.samples[t], self.k
-                        ),
-                        dtype=int,
+                # loop over the amount of attributes
+                for a in range(self.nr_attr):
+
+                    # initialize empty sample array
+                    samples = []
+
+                    # get the indices that should be the same
+                    for s, i in self.samples[t]:
+
+                        # check if the sample differs in the same attribute
+                        if i == a:
+                            samples.append(s)
+
+
+                    # target in first position with k random distractors following
+                    indices.append(
+                        np.array(
+                            [t]
+                            + random.sample(
+                                samples, self.k
+                            ),
+                            dtype=int,
+                        )
                     )
-                )
+
 
             # if we want completely random targets we just randomly sample from the entire dataset
             else:
@@ -116,7 +134,7 @@ class ReferentialSampler(Sampler):
         return self.n
 
 
-def get_attributes(nr_attributes):
+def get_attributes(nr_attributes, related = False):
 
     # configure attributes
     attributes = [3, 3, 3, 3, 3, 2, 2, 2]
@@ -133,19 +151,23 @@ def get_attributes(nr_attributes):
         gen_attr[index] += 1
         total_attr = np.prod(gen_attr)
 
+    # create bigger dataset if we use stricter setup
+    if related:
+        gen_attr = [x+1 for x in gen_attr]
+
     return gen_attr
 
 
-def get_close_samples(dataset, threshold=0.2):
+def get_close_samples(dataset, threshold=0.2, one_attribute = False):
     """
     This function takes the dataset filled with symbolic objects and
     finds closely related samples for each sample. It then returns a
     dictionary holding all samples along with a list of closely
     related samples for each sample.
     :param dataset: the set of samples
-    :param gen_attr: the amount of attributes describing the data samples
     :param threshold: value with which we decide the manner of required
                       similarity to make it as a distractor (value of 0.2 only allows one attribute to be different)
+    :param generalize: choose whether the samples should only differ on the novel object properties
     :return: every target will have a dictionary holding all of the attributes, within these attributes there will
              be a list consisting of the distractors that differ from the target on only that attribute.
              thus, shape will be:
@@ -154,6 +176,9 @@ def get_close_samples(dataset, threshold=0.2):
 
     # create dictionary in which we save possible distractors for every target,
     samples = defaultdict(list)
+
+    # determine the amount of properties an attribute can take on
+    attr_val = len(dataset[0]) / sum(dataset[0])
 
     # convert to index, for every index, get close samples
     for t_index, target in enumerate(dataset):
@@ -172,8 +197,28 @@ def get_close_samples(dataset, threshold=0.2):
             # to the target in dict
             if dist < threshold:
 
-                # append sample
-                samples[t_index].append(d_index)
+                # find which attribute differs
+                diff_index = [i for i, p in enumerate(target) if p != distractor[i]][0]
+
+                # convert index to attribute
+                attr, _ = divmod(diff_index, attr_val)
+
+                # for zero-shot generalization, only pick targets that differ on the
+                # novel object traits (color and shape in our case)
+                if one_attribute:
+
+                    # if the other attributes are different, append it as target
+                    # todo softcode --> should be able to do this while training
+                    # todo while training, re-run a target with all available attributes
+                    if np.array_equal(target[7:], distractor[7:]):
+                        samples[t_index].append((d_index, attr))
+
+                    # append sample
+                    #samples[t_index].append((d_index, attr))
+
+                else:
+                    # append sample
+                    samples[t_index].append((d_index, attr))
 
     return samples
 
@@ -218,7 +263,7 @@ def get_referential_dataloader(
         dataset,
         pin_memory=True,
         batch_sampler=BatchSampler(
-            ReferentialSampler(dataset, samples, related=related, k=k, shuffle=shuffle),
+            ReferentialSampler(dataset, samples, related=related, k=k, shuffle=shuffle, attr=gen_attr),
             batch_size=batch_size,
             drop_last=False,
         ),

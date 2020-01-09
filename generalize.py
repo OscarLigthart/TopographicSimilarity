@@ -93,8 +93,8 @@ def parse_arguments(args):
     )
     parser.add_argument(
         "--related",
-        help="Decide on the amount of distractors to use",
-        type=bool,
+        help="Decide whether to use distractors that are semantically similar to the targets",
+        action="store_true",
         default=False
     )
     parser.add_argument(
@@ -126,22 +126,18 @@ def main(args):
     create_folder_if_not_exists("runs")
     create_folder_if_not_exists("runs/" + model_name)
 
-    # if args.split:
-    #     run_folder = "runs/" + model_name + "/" + "pair" + str(args.pair) + "/" + str(args.seed)
-    #     create_folder_if_not_exists(run_folder)
-    # else:
     run_folder = "runs/" + model_name + "/" + str(args.seed)
     create_folder_if_not_exists(run_folder)
 
     model_path = run_folder + "/model.p"
 
     # remove related
-    model_path = re.sub('_related', '', model_path)
+    #model_path = re.sub('_related', '', model_path)
 
     vocab = AgentVocab(args.vocab_size)
 
     # get objects attribute early, to determine input size of models
-    gen_attr = get_attributes(args.attributes)
+    gen_attr = get_attributes(args.attributes, args.related)
 
     # get sender and receiver models
     sender = Sender(
@@ -177,7 +173,7 @@ def main(args):
 
     # check whether we need distractor samples
     if args.related:
-        samples = get_close_samples(data)
+        samples = get_close_samples(data, one_attribute=True)
     else:
         samples = None
 
@@ -189,7 +185,7 @@ def main(args):
         pin_memory=True,
         batch_sampler=BatchSampler(
             ReferentialSampler(dataset, samples, related=args.related, k=args.distractors, shuffle=False,
-                               split=args.split, attr=args.attributes, pair=args.pair),
+                               split=args.split, attr=gen_attr, pair=args.pair),
             batch_size=args.batch_size,
             drop_last=False,
         ),
@@ -201,9 +197,9 @@ def main(args):
     print(metrics['acc'])
 
     # save the metrics
-    pickle.dump(
-        metrics, open(run_folder + f"/generalize_metrics.pkl", "wb")
-    )
+    # pickle.dump(
+    #     metrics, open(run_folder + f"/generalize_metrics.pkl", "wb")
+    # )
 
 
 if __name__ == "__main__":

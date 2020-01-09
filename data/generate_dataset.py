@@ -43,7 +43,6 @@ def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES, split: int = 0
 
     # optionally split dataset
     if split:
-        # todo, manually adjusts the amount of attribute combinations you would like to remove
         one_hot_derivations = split_data(split, one_hot_derivations, pair)
 
     return one_hot_derivations
@@ -117,5 +116,7 @@ def split_data(split, one_hot_derivations, pair=1):
 
     # cast to numpy array
     one_hot_derivations = np.array(one_hot_derivations)
+
+    # todo check if everything still works on different amount of attributes
 
     return one_hot_derivations

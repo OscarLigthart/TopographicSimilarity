@@ -171,7 +171,7 @@ def main(args):
     vocab = AgentVocab(args.vocab_size)
 
     # get objects attribute early, to determine input size of models
-    gen_attr = get_attributes(args.attributes)
+    gen_attr = get_attributes(args.attributes, args.related)
 
     ####################
     # INITIALIZE MODEL #
@@ -243,6 +243,7 @@ def main(args):
     train_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors,
                                             batch_size=args.batch_size, shuffle=True,
                                             related=args.related, split=args.split, pair=args.pair)
+
     valid_data = get_referential_dataloader("shapes", gen_attr, k=args.distractors,
                                             batch_size=args.batch_size, related=args.related,
                                             split=args.split, pair=args.pair)
@@ -255,6 +256,18 @@ def main(args):
 
     while iteration < args.iterations:
         for (targets, distractors) in train_data:
+
+            # FOR TESTING PURPOSES
+            # for i in range(len(targets)):
+            #     print(targets[i])
+            #
+            #     for d in distractors:
+            #         print(d[i])
+            #
+            #     print()
+            #     print()
+            #
+            # quit()
 
             # normal training
             train_one_batch(model, optimizer, targets, distractors)
