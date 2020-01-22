@@ -40,13 +40,14 @@ class ReferentialDataset(Dataset):
 
 class ReferentialSampler(Sampler):
     def __init__(self, data_source, samples, related: bool = False, k: int = 3, shuffle: bool = False,
-                 split: int = 0, attr: int = 0, pair: int = 1):
+                 split: int = 0, attr: int = 0, pair: int = 1, generalize: bool = False):
         self.data_source = data_source
 
         # beforehand, for every sample, we gather a list of objects that are fundamentally similar
         # to that sample. We sample randomly from this list to gather distractors --> should be a dictionary
         self.samples = samples
         self.related = related
+        self.generalize = generalize
 
         # keep track of whether the dataloader should use a subset of targets (after having split the data)
         self.split = split
@@ -77,16 +78,36 @@ class ReferentialSampler(Sampler):
             # replace the targets with the splits
             targets = sub_targets
 
-            print(targets)
-
         # shuffle the targets if requested
         if self.shuffle:
             random.shuffle(targets)
 
+        # loop through targets to add distractors to every one of them
         for t in targets:
 
             # if we only want to sample related targets we use the enclosed dictionary holding these
-            if self.related:
+            if self.related and self.generalize:
+
+                # extract the samples
+                samples = []
+
+                # todo only convert samples array so code will be cleaner
+
+                for s in self.samples[t]:
+                    samples.append(s[0])
+
+                # target in first position with k random distractors following
+                indices.append(
+                    np.array(
+                        [t]
+                        + random.sample(
+                            samples, self.k
+                        ),
+                        dtype=int,
+                    )
+                )
+
+            elif self.related:
 
                 # loop over the amount of attributes
                 for a in range(self.nr_attr):
@@ -94,13 +115,13 @@ class ReferentialSampler(Sampler):
                     # initialize empty sample array
                     samples = []
 
+
                     # get the indices that should be the same
                     for s, i in self.samples[t]:
 
                         # check if the sample differs in the same attribute
                         if i == a:
                             samples.append(s)
-
 
                     # target in first position with k random distractors following
                     indices.append(
@@ -152,7 +173,7 @@ def get_attributes(nr_attributes, related = False):
         total_attr = np.prod(gen_attr)
 
     # create bigger dataset if we use stricter setup
-    if related:
+    if related or len(gen_attr) == 4:
         gen_attr = [x+1 for x in gen_attr]
 
     return gen_attr
@@ -210,11 +231,8 @@ def get_close_samples(dataset, threshold=0.2, one_attribute = False):
                     # if the other attributes are different, append it as target
                     # todo softcode --> should be able to do this while training
                     # todo while training, re-run a target with all available attributes
-                    if np.array_equal(target[7:], distractor[7:]):
+                    if np.array_equal(target[10:], distractor[10:]):
                         samples[t_index].append((d_index, attr))
-
-                    # append sample
-                    #samples[t_index].append((d_index, attr))
 
                 else:
                     # append sample

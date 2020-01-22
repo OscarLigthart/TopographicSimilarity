@@ -3,6 +3,7 @@ import sys
 import os
 import torch
 import pickle
+import diagnnose
 
 from utils import *
 from data import *
@@ -256,18 +257,6 @@ def main(args):
 
     while iteration < args.iterations:
         for (targets, distractors) in train_data:
-
-            # FOR TESTING PURPOSES
-            # for i in range(len(targets)):
-            #     print(targets[i])
-            #
-            #     for d in distractors:
-            #         print(d[i])
-            #
-            #     print()
-            #     print()
-            #
-            # quit()
 
             # normal training
             train_one_batch(model, optimizer, targets, distractors)

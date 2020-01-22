@@ -109,6 +109,17 @@ def on_hot_hamming(a, b):
         one_hot(a, n_cols=VOCAB).flatten(), one_hot(b, n_cols=VOCAB).flatten()
     )
 
+def compute_jaccard_distance_score(x, y):
+    """
+    Jaccard Similarity J (A,B) = | Intersection (A,B) | /
+                                    | Union (A,B) |
+    """
+    intersection_cardinality = len(set(x).intersection(set(y)))
+    union_cardinality = len(set(x).union(set(y)))
+
+    # 1 - result since we want the distance
+    return 1 - (intersection_cardinality / float(union_cardinality))
+
 def levenshtein_ratio_and_distance(s, t):
     """ levenshtein_ratio_and_distance:
         Calculates levenshtein distance between two strings.
@@ -148,12 +159,12 @@ def levenshtein_ratio_and_distance(s, t):
 
 
 DIST = {
-    "h_sender": spatial.distance.cosine,
-    "h_rnn_sender": flatten_cos,
-    "h_receiver": spatial.distance.cosine,
-    "h_rnn_receiver": flatten_cos,
+    #"h_sender": spatial.distance.cosine,
+    #"h_rnn_sender": flatten_cos,
+    #"h_receiver": spatial.distance.cosine,
+    #"h_rnn_receiver": flatten_cos,
     "targets": spatial.distance.hamming,
-    "messages": on_hot_hamming
+    "messages": compute_jaccard_distance_score
 }
 
 def main(args):
@@ -209,15 +220,15 @@ def main(args):
 
     # we are not interested in cross-seed RSA for targets
     DIST.pop('targets')
-    DIST.pop('messages')
+    #DIST.pop('messages')
 
-    DIST["ham_messages"] = on_hot_hamming
-    DIST["lev_messages"] = levenshtein_ratio_and_distance
+    #DIST["ham_messages"] = on_hot_hamming
+    #DIST["lev_messages"] = levenshtein_ratio_and_distance
 
 
     RESULTS = {}
 
-    for sp in tqdm(DIST):
+    for sp in DIST:
 
         # use key messages for hamming and lev distance, since data is saved in that way
         if sp == "ham_messages" or sp == "lev_messages":
@@ -230,7 +241,7 @@ def main(args):
         RESULTS[sp] = {}
 
         # compare every seed to all others
-        for s1, s2 in combinations(seed_folders, 2):
+        for s1, s2 in tqdm(combinations(seed_folders, 2)):
 
             seed1 = s1.split("/")[-1]
             seed2 = s2.split("/")[-1]

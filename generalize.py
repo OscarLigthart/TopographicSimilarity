@@ -48,7 +48,7 @@ def parse_arguments(args):
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=12,
+        default=10,
         metavar="N",
         help="input batch size for training (default: 32)",
     )
@@ -126,13 +126,15 @@ def main(args):
     create_folder_if_not_exists("runs")
     create_folder_if_not_exists("runs/" + model_name)
 
+
     run_folder = "runs/" + model_name + "/" + str(args.seed)
+
+    # remove related
+    run_folder = re.sub('_related', '', run_folder)
+
     create_folder_if_not_exists(run_folder)
 
     model_path = run_folder + "/model.p"
-
-    # remove related
-    #model_path = re.sub('_related', '', model_path)
 
     vocab = AgentVocab(args.vocab_size)
 
@@ -185,7 +187,7 @@ def main(args):
         pin_memory=True,
         batch_sampler=BatchSampler(
             ReferentialSampler(dataset, samples, related=args.related, k=args.distractors, shuffle=False,
-                               split=args.split, attr=gen_attr, pair=args.pair),
+                               split=args.split, attr=gen_attr, pair=args.pair, generalize=True),
             batch_size=args.batch_size,
             drop_last=False,
         ),
@@ -197,9 +199,9 @@ def main(args):
     print(metrics['acc'])
 
     # save the metrics
-    # pickle.dump(
-    #     metrics, open(run_folder + f"/generalize_metrics.pkl", "wb")
-    # )
+    pickle.dump(
+        metrics, open(run_folder + f"/generalize_metrics.pkl", "wb")
+    )
 
 
 if __name__ == "__main__":

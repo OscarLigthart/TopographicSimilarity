@@ -64,6 +64,7 @@ if __name__ == "__main__":
 
     A = np.random.randint(100, size=(100, 10))
     B = np.random.randint(100, size=(100, 15))
+
     distance_A = spatial.distance.cosine
     distance_B = distance_A
     r = rsa(A, B, distance_A, distance_B)
