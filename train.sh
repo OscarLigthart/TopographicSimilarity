@@ -26,8 +26,8 @@ echo "Running split task"
 #  done
 
 echo "Computing RSAs"
-python compute_rsas.py --samples 10000 --vocab-size 5 --max-length 5 --related --attributes 4 --same-data --split 2
-python compute_rsas.py --samples 10000 --vocab-size 5 --max-length 5 --attributes 4 --same-data --split 2
+python compute_rsas.py --samples 2500 --vocab-size 5 --max-length 5 --related --attributes 4 --same-data --split 2
+python compute_rsas.py --samples 2500 --vocab-size 5 --max-length 5 --attributes 4 --same-data --split 2
 #python compute_generalize_rsa.py --split 2 --same-data --samples 1000
 
 

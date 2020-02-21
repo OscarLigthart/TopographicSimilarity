@@ -65,18 +65,25 @@ def evaluate(model, data) -> dict:
     T = []
     D = []
 
-
+    # start evaluating the model
     model.eval()
     with torch.no_grad():
+
+        # loop through validation data
         for (targets, distractors) in data:
 
+            # extract targets and distractors
             T.append(targets)
             D.append(torch.cat(distractors, 0))
 
+            # run model
             loss, acc, ent, seq, h_s, h_rnn_s, h_r, h_rnn_r = model(
                 targets, distractors
             )
 
+            print('accuracy: ', acc)
+
+            # save metric values
             loss_meter.update(loss.item())
             acc_meter.update(acc.item())
             ent_meter.update(ent.item())

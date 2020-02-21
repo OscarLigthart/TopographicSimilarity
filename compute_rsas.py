@@ -222,8 +222,8 @@ def main(args):
     DIST.pop('targets')
     #DIST.pop('messages')
 
-    #DIST["ham_messages"] = on_hot_hamming
-    #DIST["lev_messages"] = levenshtein_ratio_and_distance
+    DIST["ham_messages"] = on_hot_hamming
+    DIST["lev_messages"] = levenshtein_ratio_and_distance
 
 
     RESULTS = {}

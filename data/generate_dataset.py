@@ -50,8 +50,12 @@ def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES, split: int = 0
 
 def split_data(split, one_hot_derivations, pair=1):
     """
-    This function splits data based on an amount of co-occurring attributes/features
+    Required for zero-shot generalization. It removes samples from the dataset based
+    on an amount of co-occurring attributes/features.
     The split samples are saved in a file which can be loaded for the generalization
+    :param: split:                  the amount of co-occurring attributes (default = 2)
+    :param: one_hot_derivations:    the dataset consisting of one-hot vectored object attributes
+    :param: pair:                   The object pair to remove from the dataset (default = 1, e.g. "red square")
     :return: dataset without split samples
     """
 
@@ -116,7 +120,5 @@ def split_data(split, one_hot_derivations, pair=1):
 
     # cast to numpy array
     one_hot_derivations = np.array(one_hot_derivations)
-
-    # todo check if everything still works on different amount of attributes
 
     return one_hot_derivations
