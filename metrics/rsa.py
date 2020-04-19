@@ -24,9 +24,6 @@ def rsa(
         topographical_similarity (float): correlation between similarity of pairs in both spaces
     """
 
-    #todo apply (1-distance) in one space and check for negative correlation.
-    #todo check for possible inversion in code
-
     assert len(space_x) == len(space_y)
 
     N = len(space_x)

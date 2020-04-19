@@ -1,0 +1,25 @@
+{
+    "model": {
+      "type": "ForwardLSTM",
+      "state_dict": "processed_model_related.p"
+    },
+    "corpus": {
+      "path": "corpus_related.txt"
+    },
+    "vocab": {
+      "path": "vocab.txt"
+    },
+    "decompose": {
+        "rel_interactions": ["rel-rel", "rel-irrel", "rel-b"],
+        "only_source_rel": true,
+        "only_source_rel_b": false,
+        "bias_bias_only_in_phrase": true,
+        "normalize": true,
+        "decompose_o": true,
+        "fix_shapley": false
+    },
+    "plot_attention": {
+        "clim": [-0.26, 0.75],
+        "value_font_size": 30
+    }
+}

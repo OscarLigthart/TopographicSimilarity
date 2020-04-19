@@ -13,6 +13,7 @@ from .generate_dataset import generate_dataset
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
+
 class ReferentialDataset(Dataset):
     """
     Referential Game Dataset
@@ -90,8 +91,6 @@ class ReferentialSampler(Sampler):
 
                 # extract the samples
                 samples = []
-
-                # todo only convert samples array so code will be cleaner
 
                 for s in self.samples[t]:
                     samples.append(s[0])
@@ -286,67 +285,3 @@ def get_referential_dataloader(
             drop_last=False,
         ),
     )
-
-
-class ClassifierDataset(Dataset):
-    """
-    Dataset for the language classifier
-    """
-
-    def __init__(self, data):
-        self.data = data
-
-    def __getitem__(self, indices):
-
-        # append the targets and messages
-        message = self.data[str(indices[0])]['messages'][indices[1]]
-        target = self.data[str(indices[0])]['targets'][indices[1]]
-
-        # concatenate the messages and targets
-        sample = np.concatenate((message, target))
-
-        return indices[0], sample
-
-    def __len__(self):
-        return len(self.data['1']['messages'])
-
-
-class ClassifierSampler(Sampler):
-    def __init__(self, data_source, shuffle: bool = False):
-
-        # get the data
-        self.data_source = data_source
-
-        self.n = len(data_source)
-
-        self.shuffle = shuffle
-
-
-    def __iter__(self):
-        indices = []
-
-        # get the targets
-        targets = list(range(2))
-
-        # for both datasets,
-        for t in targets:
-
-            # append the samples (target and message)
-            for sample in range(self.n):
-
-                # target in first position with k random distractors following
-                indices.append(
-                    np.array(
-                        [t+1, sample],
-                        dtype=int,
-                    )
-                )
-
-        if self.shuffle:
-            random.shuffle(indices)
-
-        return iter(indices)
-
-    def __len__(self):
-        return self.n
-

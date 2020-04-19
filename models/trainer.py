@@ -5,6 +5,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class ReferentialTrainer(nn.Module):
+    """
+    Class that trains both a sender and receiver end-to-end in
+    a referential game setup
+    """
     def __init__(self, sender, receiver):
         super().__init__()
 
@@ -30,7 +34,7 @@ class ReferentialTrainer(nn.Module):
             # give full probability (1) to padding tag
             messages[:, :, self.sender.pad_id] += (mask == 0).type(dtype=messages.dtype)
         else:
-            # fill in the rest of message with eos
+            # fill in the rest of message with padding
             messages = messages.masked_fill_(mask == 0, self.sender.pad_id)
 
         return messages
@@ -44,7 +48,8 @@ class ReferentialTrainer(nn.Module):
 
         messages, lengths, entropy, h_s, h_rnn_s = self.sender(target)
         messages = self._pad(messages, lengths)
-        h_r, h_rnn_r = self.receiver(messages=messages)
+
+        h_r, h_rnn_r = self.receiver(messages, lengths)
 
         target = target.view(batch_size, 1, -1)
         r_transform = h_r.view(batch_size, -1, 1)

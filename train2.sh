@@ -1,33 +1,15 @@
 #!/bin/bash
 
-# same data shuffles
-echo "Running split task"
+echo "Running referential game"
 
-#for split in {1..3}
+#for seed in {1..10} 
 #  do
-#    for seed in {1..10} 
-#      do
-#        python main.py --seed $seed --split $split --log-interval 1000
-#      done
-
-#    echo "Computing RSAs"
-#    python compute_rsas.py --samples 1000 --split $split
-#  done
-
-for seed in {1..10} 
-  do
-    #python main.py --seed $seed --split 2 --vocab-size 5 --max-length 5 --same-data --attributes 4 --hidden-size 128
-    python generalize.py --split 2 --seed $seed --vocab-size 5 --max-length 5 --same-data --related --attributes 4 --hidden-size 128
-  done
-
-#for seed in {1..10}
-#  do
-#    python main.py --seed $seed --vocab-size 5 --max-length 5 --same-data --attributes 4 --hidden-size 128 
+#    python3 main.py --seed $seed --vocab-size 5 --max-length 5 --same-data --attributes 4 --hidden-size 256
+#    python3 main.py --seed $seed --vocab-size 5 --max-length 5 --attributes 4 --hidden-size 256
 #  done
 
 echo "Computing RSAs"
-#python compute_rsas.py --samples 1000 --vocab-size 5 --max-length 5
-#python compute_generalize_rsa.py --split 2 --same-data --samples 1000
-
+python3 compute_rsas.py --samples 2500 --vocab-size 5 --max-length 5 --attributes 4 --same-data
+python3 compute_rsas.py --samples 2500 --vocab-size 5 --max-length 5 --attributes 4
 
 

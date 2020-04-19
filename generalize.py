@@ -98,6 +98,12 @@ def parse_arguments(args):
         default=False
     )
     parser.add_argument(
+        "--strict",
+        help="Decide whether to use the stricter testing environment",
+        action="store_true",
+        default=False
+    )
+    parser.add_argument(
         "--split",
         help="Decide whether to use all generated samples or keep some apart for testing generalization,"
              " value decides the amount of cooccurences to be removed",
@@ -126,12 +132,13 @@ def main(args):
     create_folder_if_not_exists("runs")
     create_folder_if_not_exists("runs/" + model_name)
 
-
     run_folder = "runs/" + model_name + "/" + str(args.seed)
 
     # remove related
-    run_folder = re.sub('_related', '', run_folder)
+    if not args.related:
+        run_folder = re.sub('_related', '', run_folder)
 
+    # create the folder if it does not yet exist
     create_folder_if_not_exists(run_folder)
 
     model_path = run_folder + "/model.p"
@@ -174,7 +181,7 @@ def main(args):
     # load regular dataset, replace the targets with the saved split
 
     # check whether we need distractor samples
-    if args.related:
+    if args.strict:
         samples = get_close_samples(data, one_attribute=True)
     else:
         samples = None
@@ -182,11 +189,12 @@ def main(args):
     # create dataloader
     dataset = ReferentialDataset(data)
 
+    # todo test
     valid_data = DataLoader(
         dataset,
         pin_memory=True,
         batch_sampler=BatchSampler(
-            ReferentialSampler(dataset, samples, related=args.related, k=args.distractors, shuffle=False,
+            ReferentialSampler(dataset, samples, related=args.strict, k=args.distractors, shuffle=False,
                                split=args.split, attr=gen_attr, pair=args.pair, generalize=True),
             batch_size=args.batch_size,
             drop_last=False,
@@ -198,9 +206,14 @@ def main(args):
 
     print(metrics['acc'])
 
+    if args.strict and not args.related:
+        filename = run_folder + f"/generalize_related_metrics.pkl"
+    else:
+        filename = run_folder + f"/generalize_metrics.pkl"
+
     # save the metrics
     pickle.dump(
-        metrics, open(run_folder + f"/generalize_metrics.pkl", "wb")
+        metrics, open(filename, "wb")
     )
 
 

@@ -81,8 +81,6 @@ def evaluate(model, data) -> dict:
                 targets, distractors
             )
 
-            print('accuracy: ', acc)
-
             # save metric values
             loss_meter.update(loss.item())
             acc_meter.update(acc.item())

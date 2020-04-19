@@ -1,0 +1,19 @@
+{
+    "model": {
+      "type": "ForwardLSTM",
+      "state_dict": "Experiments/1/model.p"
+    },
+    "corpus": {
+      "path": "Experiments/1/corpus24.txt"
+    },
+    "vocab": {
+      "path": "Experiments/1/vocab24.txt"
+    },
+    "activations" : {
+      "activations_dir": "Experiments/1/activations24"
+    },
+    "decompose": {
+      "decomposer": "ShapleyDecomposer",
+      "create_new_activations": true
+    }
+}

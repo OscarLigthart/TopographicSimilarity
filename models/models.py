@@ -46,6 +46,8 @@ class Receiver(nn.Module):
         super().__init__()
 
         self.full_vocab_size = vocab.full_vocab_size
+
+        # vocab size + 1 due to the extra sos token which the agent shouldnt be able to access
         self.vocab_size = vocab.vocab_size + 1
 
         self.embedding_size = embedding_size
@@ -54,13 +56,16 @@ class Receiver(nn.Module):
         self.cell_type = cell_type
 
         if cell_type == "lstm":
-            self.rnn = nn.LSTMCell(embedding_size, hidden_size)
+            # old code:
+            # self.rnn = nn.LSTMCell(embedding_size, hidden_size)
+
+            # new code:
+            self.rnn = nn.LSTM(embedding_size, hidden_size)
         else:
             raise ValueError(
                 "Receiver case with cell_type '{}' is undefined".format(cell_type)
             )
 
-        # vocab size + 1 due to the extra sos token which the agent shouldnt be able to access
         self.embedding = nn.Parameter(
             torch.empty((self.full_vocab_size, embedding_size), dtype=torch.float32)
         )
@@ -82,7 +87,7 @@ class Receiver(nn.Module):
                 self.rnn.bias_hh[self.hidden_size : 2 * self.hidden_size], val=1
             )
 
-    def forward(self, messages):
+    def forward(self, messages, seq_lengths):
         batch_size = messages.shape[0]
 
         emb = (
@@ -92,21 +97,48 @@ class Receiver(nn.Module):
         )
 
         # initialize hidden
-        h = torch.zeros([batch_size, self.hidden_size], device=device)
+        # h = torch.zeros([batch_size, self.hidden_size], device=device)
+        h = torch.zeros([1, batch_size, self.hidden_size], device=device)
         if self.cell_type == "lstm":
-            c = torch.zeros([batch_size, self.hidden_size], device=device)
+            # c = torch.zeros([batch_size, self.hidden_size], device=device)
+            c = torch.zeros([1, batch_size, self.hidden_size], device=device)
             h = (h, c)
 
-        # make sequence_length be first dim
-        seq_iterator = emb.transpose(0, 1)
-        for w in seq_iterator:
-            h = self.rnn(w, h)
+        ############
+        # New code #
+        ############
+
+        # transpose embedding so shape = (seq_len, batch_size, embedding)
+        emb = emb.transpose(0, 1)
+
+        # pack sequence to ignore padding
+        pack = torch.nn.utils.rnn.pack_padded_sequence(emb, seq_lengths.cpu().numpy(),
+                                                       enforce_sorted=False)
+
+        # run the RNN
+        _, h = self.rnn(pack, h)
+
+        ############
+        # Old code #
+        ############
+
+        # # make sequence_length be first dim
+        # seq_iterator = emb.transpose(0, 1)
+        #
+        # for w in seq_iterator:
+        #     h = self.rnn(w, h)
+
+        #############
 
         if self.cell_type == "lstm":
             h = h[0]  # keep only hidden state, ditch cell state
 
         # convert hidden state to prediction
         out = self.output_module(h)
+
+        # convert embedding and output to correct shapes
+        out = out.view(batch_size, -1)
+        emb = emb.transpose(0, 1)
 
         return out, emb
 

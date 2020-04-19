@@ -213,7 +213,6 @@ def main(args):
     pytorch_total_params = sum(p.numel() for p in model.parameters())
     print(f"Total number of parameters: {pytorch_total_params}")
 
-    quit()
     ##################
     # MODEL FREEZING #
     ############################################################

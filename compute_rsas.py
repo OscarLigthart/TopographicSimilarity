@@ -161,10 +161,12 @@ def levenshtein_ratio_and_distance(s, t):
 DIST = {
     #"h_sender": spatial.distance.cosine,
     #"h_rnn_sender": flatten_cos,
-    #"h_receiver": spatial.distance.cosine,
+    "h_receiver": spatial.distance.cosine,
     #"h_rnn_receiver": flatten_cos,
     "targets": spatial.distance.hamming,
-    "messages": compute_jaccard_distance_score
+    "messages": compute_jaccard_distance_score,
+    "ham_messages": on_hot_hamming,
+    "lev_messages": levenshtein_ratio_and_distance
 }
 
 def main(args):
@@ -209,8 +211,20 @@ def main(args):
         m = pickle.load(open(file, "rb"))
         for (space_x, space_y) in combinations(list(DIST.keys()), 2):
             rsa_title = f"RSA:{space_x}/{space_y}"
-            #if rsa_title not in m:
-            r = rsa(m[space_x], m[space_y], DIST[space_x], DIST[space_y], number_of_samples=args.samples)
+
+            # convert space x to right key
+            if space_x == "ham_messages" or space_x == "lev_messages":
+                sp_x = "messages"
+            else:
+                sp_x = space_x
+
+            # convert space y to right key
+            if space_y == "ham_messages" or space_y == "lev_messages":
+                sp_y = "messages"
+            else:
+                sp_y = space_y
+
+            r = rsa(m[sp_x], m[sp_y], DIST[space_x], DIST[space_y], number_of_samples=args.samples)
             m[rsa_title] = r
 
         pickle.dump(m, open(file, "wb"))
@@ -220,10 +234,10 @@ def main(args):
 
     # we are not interested in cross-seed RSA for targets
     DIST.pop('targets')
-    #DIST.pop('messages')
+    DIST.pop('h_receiver')
 
-    DIST["ham_messages"] = on_hot_hamming
-    DIST["lev_messages"] = levenshtein_ratio_and_distance
+    #DIST["ham_messages"] = on_hot_hamming
+    #DIST["lev_messages"] = levenshtein_ratio_and_distance
 
 
     RESULTS = {}
@@ -257,8 +271,11 @@ def main(args):
                 # parse the path to get the second file
                 metric_file = f1.split("/")[-1]
 
+                # determine iteration
                 if 'generalize_metrics.pkl' in f1:
                     iteration = 'generalize'
+                elif 'generalize_related_metrics.pkl' in f1:
+                    iteration = 'generalize_related'
                 else:
                     iteration = int(metric_file.split("_")[-1].split(".")[0])
 
